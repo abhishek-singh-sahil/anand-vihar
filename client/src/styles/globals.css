@@ -1,0 +1,1056 @@
+/* ===========================================================
+   GOOGLE FONTS
+=========================================================== */
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+/* ===========================================================
+   DESIGN SYSTEM
+=========================================================== */
+
+:root{
+
+    /* ================= BRAND ================= */
+
+    --primary:#ff9248;
+    --primary-light:#ffa242;
+    --primary-dark:#ff7d28;
+
+    --secondary:#013e37;
+    --secondary-light:#045148;
+
+    --danger:#9a0002;
+
+    --gold:#ffefb3;
+
+    --cream:#efe6dd;
+
+    /* ================= BACKGROUND ================= */
+
+    --bg:#FDFCFA;
+
+    --bg-section:#FAF5EF;
+
+    --bg-card:#F8FBF8;
+
+    --bg-dashboard:#F4F8FF;
+
+    --bg-table:#EAEDF0;
+
+    --bg-input:#F4F4F4;
+
+    --bg-accent:#FDFFF5;
+
+    /* ================= TEXT ================= */
+
+    --heading:#013e37;
+
+    --text:#425466;
+
+    --muted:#7B8794;
+
+    --white:#ffffff;
+
+    /* ================= BORDER ================= */
+
+    --border:#ECECEC;
+
+    --border-light:#F4F1ED;
+
+    /* ================= RADIUS ================= */
+
+    --radius-sm:14px;
+
+    --radius-md:20px;
+
+    --radius-lg:28px;
+
+    --radius-xl:40px;
+
+    /* ================= SHADOW ================= */
+
+    --shadow-xs:
+    0 6px 18px rgba(0,0,0,.04);
+
+    --shadow-sm:
+    0 12px 30px rgba(0,0,0,.06);
+
+    --shadow-md:
+    0 18px 45px rgba(0,0,0,.08);
+
+    --shadow-lg:
+    0 28px 70px rgba(0,0,0,.10);
+
+    --shadow-xl:
+    0 40px 90px rgba(0,0,0,.14);
+
+    /* ================= TRANSITION ================= */
+
+    --transition:.35s cubic-bezier(.4,0,.2,1);
+
+}
+
+/* ===========================================================
+   RESET
+=========================================================== */
+
+*,
+*::before,
+*::after{
+
+    margin:0;
+
+    padding:0;
+
+    box-sizing:border-box;
+
+}
+
+html{
+
+    scroll-behavior:smooth;
+
+    -webkit-text-size-adjust:100%;
+
+}
+
+body{
+
+    font-family:"Inter",sans-serif;
+
+    background:var(--bg);
+
+    color:var(--text);
+
+    overflow-x:hidden;
+
+    text-rendering:optimizeLegibility;
+
+    -webkit-font-smoothing:antialiased;
+
+    -moz-osx-font-smoothing:grayscale;
+
+}
+
+img,
+picture{
+
+    display:block;
+
+    max-width:100%;
+
+    user-select:none;
+
+}
+
+a{
+
+    text-decoration:none;
+
+    color:inherit;
+
+}
+
+button{
+
+    font-family:inherit;
+
+    border:none;
+
+    outline:none;
+
+    cursor:pointer;
+
+    background:none;
+
+}
+
+input,
+textarea,
+select{
+
+    font:inherit;
+
+    outline:none;
+
+}
+
+ul{
+
+    list-style:none;
+
+}
+
+/* ===========================================================
+   TYPOGRAPHY
+=========================================================== */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6{
+
+    font-family:"Poppins",sans-serif;
+
+    color:var(--heading);
+
+    font-weight:700;
+
+    line-height:1.08;
+
+    letter-spacing:-0.03em;
+
+}
+
+p{
+
+    color:var(--text);
+
+    line-height:1.85;
+
+}
+
+::selection{
+
+    background:rgba(255,146,72,.25);
+
+    color:#013e37;
+
+}
+
+/* ===========================================================
+   PREMIUM CONTAINER
+=========================================================== */
+
+.section{
+
+    width:min(1400px,92%);
+
+    margin-inline:auto;
+
+    position:relative;
+
+}
+
+.section-lg{
+
+    width:min(1500px,94%);
+
+    margin-inline:auto;
+
+}
+
+.section-space{
+
+    padding-block:120px;
+
+}
+
+.section-space-sm{
+
+    padding-block:80px;
+
+}
+
+.section-space-xs{
+
+    padding-block:60px;
+
+}
+
+/* ===========================================================
+   COMMON TITLES
+=========================================================== */
+
+.title{
+
+    font-size:clamp(2.8rem,5vw,5.5rem);
+
+    font-weight:800;
+
+    color:var(--heading);
+
+    line-height:1.05;
+
+}
+
+.subtitle{
+
+    font-size:clamp(2rem,3vw,3rem);
+
+    font-weight:700;
+
+}
+
+.description{
+
+    max-width:720px;
+
+    font-size:18px;
+
+    line-height:1.9;
+
+    color:var(--text);
+
+}
+/* ===========================================================
+   PREMIUM BUTTONS
+=========================================================== */
+
+.btn{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:12px;
+
+    padding:16px 34px;
+
+    border-radius:999px;
+
+    font-weight:600;
+
+    transition:var(--transition);
+
+    cursor:pointer;
+
+    white-space:nowrap;
+
+}
+
+.btn-primary{
+
+    color:white;
+
+    background:linear-gradient(
+        135deg,
+        var(--primary),
+        var(--primary-light)
+    );
+
+    box-shadow:
+        0 18px 35px rgba(255,146,72,.28);
+
+}
+
+.btn-primary:hover{
+
+    transform:translateY(-5px);
+
+    box-shadow:
+        0 25px 50px rgba(255,146,72,.38);
+
+}
+
+.btn-secondary{
+
+    background:white;
+
+    color:var(--secondary);
+
+    border:2px solid var(--secondary);
+
+}
+
+.btn-secondary:hover{
+
+    background:var(--secondary);
+
+    color:white;
+
+    transform:translateY(-5px);
+
+}
+
+/* ===========================================================
+   PREMIUM CARDS
+=========================================================== */
+
+.card{
+
+    background:white;
+
+    border-radius:var(--radius-lg);
+
+    border:1px solid rgba(0,0,0,.04);
+
+    box-shadow:var(--shadow-sm);
+
+    transition:var(--transition);
+
+}
+
+.card:hover{
+
+    transform:translateY(-10px);
+
+    box-shadow:var(--shadow-lg);
+
+}
+
+.card-glass{
+
+    background:rgba(255,255,255,.78);
+
+    backdrop-filter:blur(18px);
+
+    -webkit-backdrop-filter:blur(18px);
+
+    border:1px solid rgba(255,255,255,.55);
+
+    border-radius:var(--radius-lg);
+
+    box-shadow:var(--shadow-md);
+
+}
+
+.card-soft{
+
+    background:var(--bg-card);
+
+    border-radius:var(--radius-lg);
+
+    border:1px solid var(--border-light);
+
+}
+
+/* ===========================================================
+   PREMIUM SHADOWS
+=========================================================== */
+
+.shadow-premium{
+
+    box-shadow:var(--shadow-lg);
+
+}
+
+.shadow-soft{
+
+    box-shadow:var(--shadow-sm);
+
+}
+
+.shadow-large{
+
+    box-shadow:var(--shadow-xl);
+
+}
+
+/* ===========================================================
+   PREMIUM GRADIENTS
+=========================================================== */
+
+.orange-gradient{
+
+    background:linear-gradient(
+        135deg,
+        #ff9248 0%,
+        #ffa242 55%,
+        #ffb36d 100%
+    );
+
+}
+
+.green-gradient{
+
+    background:linear-gradient(
+        135deg,
+        #013e37,
+        #045148
+    );
+
+}
+
+.gold-gradient{
+
+    background:linear-gradient(
+        135deg,
+        #fff8dc,
+        #ffefb3
+    );
+
+}
+
+/* ===========================================================
+   PREMIUM BACKGROUNDS
+=========================================================== */
+
+.bg-pattern{
+
+    position:relative;
+
+}
+
+.bg-pattern::before{
+
+    content:"";
+
+    position:absolute;
+
+    inset:0;
+
+    pointer-events:none;
+
+    background-image:
+        radial-gradient(
+            rgba(1,62,55,.05) 1px,
+            transparent 1px
+        );
+
+    background-size:22px 22px;
+
+    opacity:.35;
+
+}
+
+/* ===========================================================
+   HOVER EFFECTS
+=========================================================== */
+
+.hover-up{
+
+    transition:var(--transition);
+
+}
+
+.hover-up:hover{
+
+    transform:translateY(-8px);
+
+}
+
+.hover-scale{
+
+    transition:var(--transition);
+
+}
+
+.hover-scale:hover{
+
+    transform:scale(1.05);
+
+}
+
+.hover-shadow{
+
+    transition:var(--transition);
+
+}
+
+.hover-shadow:hover{
+
+    box-shadow:var(--shadow-xl);
+
+}
+
+/* ===========================================================
+   IMAGE UTILITIES
+=========================================================== */
+
+.image-cover{
+
+    width:100%;
+
+    height:100%;
+
+    object-fit:cover;
+
+}
+
+.image-contain{
+
+    width:100%;
+
+    height:100%;
+
+    object-fit:contain;
+
+}
+
+.round-image{
+
+    border-radius:50%;
+
+}
+
+/* ===========================================================
+   GLASS EFFECT
+=========================================================== */
+
+.glass{
+
+    background:rgba(255,255,255,.72);
+
+    backdrop-filter:blur(18px);
+
+    -webkit-backdrop-filter:blur(18px);
+
+    border:1px solid rgba(255,255,255,.55);
+
+}
+
+/* ===========================================================
+   PREMIUM ANIMATIONS
+=========================================================== */
+
+@keyframes float{
+
+    0%{
+
+        transform:translateY(0);
+
+    }
+
+    50%{
+
+        transform:translateY(-16px);
+
+    }
+
+    100%{
+
+        transform:translateY(0);
+
+    }
+
+}
+
+.float{
+
+    animation:float 5s ease-in-out infinite;
+
+}
+
+@keyframes pulseGlow{
+
+    0%{
+
+        box-shadow:0 0 0 rgba(255,146,72,.25);
+
+    }
+
+    50%{
+
+        box-shadow:0 0 35px rgba(255,146,72,.35);
+
+    }
+
+    100%{
+
+        box-shadow:0 0 0 rgba(255,146,72,.25);
+
+    }
+
+}
+
+.glow{
+
+    animation:pulseGlow 3s ease-in-out infinite;
+
+}
+
+.fade{
+
+    animation:fade .7s ease;
+
+}
+
+@keyframes fade{
+
+    from{
+
+        opacity:0;
+
+        transform:translateY(20px);
+
+    }
+
+    to{
+
+        opacity:1;
+
+        transform:translateY(0);
+
+    }
+
+}
+/* ===========================================================
+   FORM ELEMENTS
+=========================================================== */
+
+input,
+textarea,
+select{
+
+    width:100%;
+
+    padding:16px 18px;
+
+    border-radius:16px;
+
+    border:1px solid var(--border);
+
+    background:var(--bg-input);
+
+    transition:var(--transition);
+
+}
+
+input:focus,
+textarea:focus,
+select:focus{
+
+    border-color:var(--primary);
+
+    background:white;
+
+    box-shadow:
+        0 0 0 4px rgba(255,146,72,.12);
+
+}
+
+textarea{
+
+    resize:vertical;
+
+    min-height:140px;
+
+}
+
+/* ===========================================================
+   BADGES
+=========================================================== */
+
+.badge{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    padding:10px 18px;
+
+    border-radius:999px;
+
+    background:#FFF5E9;
+
+    color:var(--secondary);
+
+    font-weight:600;
+
+    font-size:.95rem;
+
+}
+
+/* ===========================================================
+   DIVIDERS
+=========================================================== */
+
+.divider{
+
+    width:100%;
+
+    height:1px;
+
+    background:var(--border-light);
+
+}
+
+/* ===========================================================
+   ICON WRAPPERS
+=========================================================== */
+
+.icon-box{
+
+    width:58px;
+
+    height:58px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    border-radius:18px;
+
+    background:#FFF4EB;
+
+    color:var(--primary);
+
+}
+
+.icon-box-green{
+
+    background:#EAF8F4;
+
+    color:var(--secondary);
+
+}
+
+/* ===========================================================
+   FLEX HELPERS
+=========================================================== */
+
+.flex-center{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+}
+
+.flex-between{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+}
+
+.flex-column{
+
+    display:flex;
+
+    flex-direction:column;
+
+}
+
+/* ===========================================================
+   BORDER HELPERS
+=========================================================== */
+
+.border-soft{
+
+    border:1px solid var(--border-light);
+
+}
+
+.rounded-xl{
+
+    border-radius:var(--radius-xl);
+
+}
+
+.rounded-lg{
+
+    border-radius:var(--radius-lg);
+
+}
+
+.rounded-md{
+
+    border-radius:var(--radius-md);
+
+}
+
+/* ===========================================================
+   SCROLLBAR
+=========================================================== */
+
+::-webkit-scrollbar{
+
+    width:10px;
+
+}
+
+::-webkit-scrollbar-track{
+
+    background:#f5eee7;
+
+}
+
+::-webkit-scrollbar-thumb{
+
+    background:linear-gradient(
+        180deg,
+        var(--primary),
+        var(--primary-light)
+    );
+
+    border-radius:999px;
+
+}
+
+::-webkit-scrollbar-thumb:hover{
+
+    background:var(--primary-dark);
+
+}
+
+/* ===========================================================
+   FOCUS ACCESSIBILITY
+=========================================================== */
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible{
+
+    outline:3px solid rgba(255,146,72,.25);
+
+    outline-offset:4px;
+
+}
+
+/* ===========================================================
+   RESPONSIVE
+=========================================================== */
+
+@media (max-width:1400px){
+
+    .section{
+
+        width:min(95%,1320px);
+
+    }
+
+}
+
+@media (max-width:1200px){
+
+    .section{
+
+        width:94%;
+
+    }
+
+}
+
+@media (max-width:992px){
+
+    .section-space{
+
+        padding-block:90px;
+
+    }
+
+    .title{
+
+        line-height:1.1;
+
+    }
+
+}
+
+@media (max-width:768px){
+
+    .section{
+
+        width:92%;
+
+    }
+
+    .section-space{
+
+        padding-block:70px;
+
+    }
+
+    .section-space-sm{
+
+        padding-block:60px;
+
+    }
+
+    .title{
+
+        font-size:clamp(2.4rem,9vw,3.8rem);
+
+    }
+
+    .subtitle{
+
+        font-size:2rem;
+
+    }
+
+    .description{
+
+        font-size:16px;
+
+        line-height:1.8;
+
+    }
+
+    .btn{
+
+        width:100%;
+
+    }
+
+}
+
+@media (max-width:576px){
+
+    .section{
+
+        width:90%;
+
+    }
+
+    .card{
+
+        border-radius:20px;
+
+    }
+
+}
+
+/* ===========================================================
+   LARGE DISPLAYS (2K / 4K)
+=========================================================== */
+
+@media (min-width:1800px){
+
+    .section{
+
+        width:min(1600px,88%);
+
+    }
+
+}
+
+/* ===========================================================
+   SMOOTH TRANSITIONS
+=========================================================== */
+
+a,
+button,
+input,
+textarea,
+.card,
+.btn{
+
+    transition:var(--transition);
+
+}
+
+/* ===========================================================
+   REMOVE IMAGE DRAG
+=========================================================== */
+
+img{
+
+    -webkit-user-drag:none;
+
+    user-select:none;
+
+}
+
+/* ===========================================================
+   END OF GLOBAL STYLES
+=========================================================== */
