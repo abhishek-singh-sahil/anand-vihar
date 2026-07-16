@@ -23,7 +23,13 @@ function Menu() {
     try {
       const res = await api.get("/menu/categories");
       if (res.data.success) {
-        const catNames = res.data.categories.map(c => c.name);
+        let catNames = res.data.categories.map(c => c.name);
+        if (settings && !settings.reservationsEnabled) {
+          catNames = catNames.filter(name => 
+            name.toLowerCase().includes("sweet") || 
+            name.toLowerCase().includes("beverage")
+          );
+        }
         setCategories(["All", ...catNames]);
       }
     } catch (error) {
@@ -45,7 +51,14 @@ function Menu() {
 
       const res = await api.get(url);
       if (res.data.success) {
-        setItems(res.data.items);
+        let loadedItems = res.data.items;
+        if (settings && !settings.reservationsEnabled) {
+          loadedItems = loadedItems.filter(item => 
+            item.category.toLowerCase().includes("sweet") || 
+            item.category.toLowerCase().includes("beverage")
+          );
+        }
+        setItems(loadedItems);
       }
     } catch (error) {
       console.error("Could not load menu items:", error);
@@ -57,11 +70,11 @@ function Menu() {
 
   useEffect(() => {
     fetchCategories();
-  }, []);
+  }, [settings]);
 
   useEffect(() => {
     fetchMenuItems();
-  }, [activeCategory, vegOnly, bestsellerOnly, popularOnly, newOnly]);
+  }, [activeCategory, vegOnly, bestsellerOnly, popularOnly, newOnly, settings]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();

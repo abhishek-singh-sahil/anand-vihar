@@ -137,7 +137,7 @@ function Contact() {
             <div className="space-y-4 text-sm text-gray-600 leading-relaxed">
               <p>
                 <strong>📍 Address:</strong><br />
-                Anand Vihar Complex, Near Jhanda Chowk, Ranchi Patna Road, Jhumri Telaiya, Jharkhand - 825409
+                Anand Vihar Sweet Shop, Near HDFC Bank, Jhanda Chowk, Jhumri Telaiya, Koderma, Jharkhand - 825409
               </p>
               <p>
                 <strong>📞 Phone:</strong> <a href="tel:+919934190109" className="text-[#ff9248] hover:underline font-bold">+91 9934190109</a>
@@ -174,7 +174,7 @@ function Contact() {
           <div className="rounded-3xl overflow-hidden border border-gray-100 shadow-sm aspect-video bg-gray-100">
             <iframe
               title="Anand Vihar Google Map"
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3618.665798939023!2d85.5262272!3d24.4372549!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39f373eb18285513%3A0xe54d24ee385c7a0c!2sAnand%20Vihar%20Complex!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3618.9602521764654!2d85.5186001759556!3d24.43470437820757!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39f373b9e403d15d%3A0xe9ea026e6ef1b6b5!2sJhanda%20Chowk%2C%20Jhumri%20Telaiya%2C%20Jharkhand%20825409!5e0!3m2!1sen!2sin!4v1710000000000!5m2!1sen!2sin"
               width="100%"
               height="100%"
               style={{ border: 0 }}

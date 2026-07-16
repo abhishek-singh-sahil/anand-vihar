@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
 import {
   Candy,
   Pizza,
@@ -49,6 +50,18 @@ const categories = [
 ];
 
 function Categories() {
+  const { settings } = useAuth();
+
+  // Show only 3 sweet-related cards if restaurant mode (reservations) is off
+  const displayedCategories = (settings?.reservationsEnabled)
+    ? categories
+    : categories.filter(
+        (c) =>
+          c.title === "Traditional Sweets" ||
+          c.title === "Beverages" ||
+          c.title === "Ice Cream"
+      );
+
   return (
     <section className="py-24 bg-[var(--bg-main)] font-sans">
       <div className="section">
@@ -69,15 +82,13 @@ function Categories() {
           </h2>
 
           <p className="mt-6 text-slate-600 leading-8">
-            Whether you're craving authentic Indian sweets,
-            delicious fast food or refreshing beverages,
-            Anand Vihar has something for everyone.
+            Whether you're craving authentic Indian sweets, refreshing beverages, or premium ice creams, Anand Vihar has something for everyone.
           </p>
         </motion.div>
 
         {/* Cards */}
         <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {categories.map((item, index) => {
+          {displayedCategories.map((item, index) => {
             const Icon = item.icon;
             return (
               <motion.div
