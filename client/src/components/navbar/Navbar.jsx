@@ -15,11 +15,13 @@ import {
   FaShoppingBag
 } from 'react-icons/fa'
 import { useAuth } from '../../hooks/useAuth'
+import { useCart } from '../../context/CartContext'
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const { user, isAuthenticated, isAdmin, logoutUser, settings } = useAuth()
+  const { getCartCount } = useCart()
   
   // Track scroll position to dynamically collapse announcement bar
   const [scrolled, setScrolled] = useState(false)
@@ -34,23 +36,31 @@ const Navbar = () => {
     { name: 'Gallery', link: '/gallery' },
     { name: 'Testimonials', link: '/testimonials' },
     { name: 'Blogs', link: '/blogs' },
-    ...(settings?.reservationsEnabled ? [{ name: 'Reservation', link: '/reservation' }] : []),
     { name: 'About', link: '/about' },
     { name: 'Contact', link: '/contact' }
   ]
 
-  // Track scroll position
+  // Track scroll position with a lock timer to prevent vibrating loops due to layout shift
+  const lastToggleTime = useRef(0)
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 40) {
+      const currentScroll = window.scrollY
+      const now = Date.now()
+      
+      // Prevent state changes more than once every 500ms
+      if (now - lastToggleTime.current < 500) return
+
+      if (currentScroll > 60 && !scrolled) {
         setScrolled(true)
-      } else {
+        lastToggleTime.current = now
+      } else if (currentScroll <= 60 && scrolled) {
         setScrolled(false)
+        lastToggleTime.current = now
       }
     }
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+  }, [scrolled])
 
   // Automatically sync active tab underline with the real browser location URL path
   useEffect(() => {
@@ -127,9 +137,11 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* ================= MAIN HEADER NAVIGATION (Sticky Container) ================= */}
+      {/* ================= MAIN HEADER NAVIGATION ================= */}
       <nav className="w-full bg-white/95 backdrop-blur-md rounded-b-3xl transition-all duration-300">
-        <div className='w-full max-w-[1440px] mx-auto h-20 lg:h-24 px-4 sm:px-8 lg:px-12 flex items-center justify-between gap-4'>
+        <div className={`w-full max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 flex items-center justify-between gap-4 transition-all duration-300 ${
+          scrolled ? 'h-16 lg:h-20' : 'h-20 lg:h-24'
+        }`}>
           
           {/* Brand Logo Anchor */}
           <a href="/" onClick={handleLinkClick} className='flex items-center justify-start flex-shrink-0 py-2'>
@@ -188,14 +200,14 @@ const Navbar = () => {
             {/* Dynamic Cart Icon Link (visible only if ordering is enabled) */}
             {settings?.orderingEnabled && (
               <a 
-                href="/menu"
+                href="/cart"
                 onClick={handleLinkClick}
                 className='relative cursor-pointer text-gray-800 hover:text-[#ff6b1a] transition-colors p-1 flex items-center justify-center'
-                title="View Menu & Ordering"
+                title="View Shopping Cart"
               >
                 <FaShoppingBag size={18} />
                 <span className='absolute -top-1.5 -right-1.5 bg-[#ff6b1a] text-white w-4 h-4 rounded-full text-[9px] flex items-center justify-center font-bold shadow-sm animate-bounce'>
-                  0
+                  {getCartCount()}
                 </span>
               </a>
             )}
@@ -235,29 +247,20 @@ const Navbar = () => {
                 <span>Login</span>
               </a>
             )}
-
-            {/* Book Table Button (visible only if reservations are enabled) */}
-            {settings?.reservationsEnabled && (
-              <a 
-                href="/reservation"
-                onClick={handleLinkClick}
-                className='flex items-center justify-center gap-2 bg-[#ff6b1a] !text-white px-4 py-2.5 rounded-xl font-sans font-semibold text-[14px] hover:bg-[#ea5a00] transition-all shadow-sm cursor-pointer whitespace-nowrap text-center no-underline min-h-[40px] border border-transparent'
-              >
-                <FaCalendarAlt size={12} className='!text-white' />
-                <span className='!text-white'>Book Table</span>
-              </a>
-            )}
           </div>
 
           {/* Mobile UI Action Layer */}
           <div className='flex items-center gap-3 lg:hidden flex-shrink-0'>
             {settings?.orderingEnabled && (
               <a 
-                href="/menu"
+                href="/cart"
                 onClick={handleLinkClick}
                 className='relative cursor-pointer text-gray-800 p-1.5 flex items-center justify-center mr-2'
               >
                 <FaShoppingBag size={20} />
+                <span className='absolute top-0 right-0 bg-[#ff6b1a] text-white w-4 h-4 rounded-full text-[8px] flex items-center justify-center font-bold shadow-sm'>
+                  {getCartCount()}
+                </span>
               </a>
             )}
             <button
@@ -341,17 +344,6 @@ const Navbar = () => {
                 >
                   <FaUser size={13} />
                   <span>Login / Register</span>
-                </a>
-              )}
-
-              {settings?.reservationsEnabled && (
-                <a 
-                  href="/reservation"
-                  onClick={handleLinkClick}
-                  className='w-full bg-[#ff6b1a] !text-white rounded-xl py-3.5 font-semibold flex items-center justify-center gap-2 hover:bg-[#ea5a00] transition-colors shadow-sm text-center no-underline min-h-[46px] text-sm'
-                >
-                  <FaCalendarAlt size={13} className='!text-white' />
-                  <span className='!text-white'>Book Table Slots</span>
                 </a>
               )}
             </div>

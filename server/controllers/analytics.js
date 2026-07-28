@@ -1,74 +1,107 @@
-import User from "../models/User.js";
-import Reservation from "../models/Reservation.js";
-import Testimonial from "../models/Testimonial.js";
-import Blog from "../models/Blog.js";
-import Gallery from "../models/Gallery.js";
-import Subscriber from "../models/Subscriber.js";
-import Contact from "../models/Contact.js";
+import { prisma } from "../config/db.js";
 
 export const getDashboardStats = async (req, res, next) => {
   try {
-    const totalUsers = await User.countDocuments();
-    const totalReservations = await Reservation.countDocuments();
-    const pendingReservations = await Reservation.countDocuments({ status: "pending" });
-    const approvedReservations = await Reservation.countDocuments({ status: "approved" });
-    const totalTestimonials = await Testimonial.countDocuments();
-    const pendingTestimonials = await Testimonial.countDocuments({ status: "pending" });
-    const totalBlogs = await Blog.countDocuments();
-    const totalGallery = await Gallery.countDocuments();
-    const totalSubscribers = await Subscriber.countDocuments({ status: "active" });
-    const unreadMessages = await Contact.countDocuments({ status: "unread" });
+    const totalUsers = await prisma.user.count();
+    const totalOrders = await prisma.order.count();
+    const pendingOrders = await prisma.order.count({ where: { status: "pending" } });
+    const completedOrders = await prisma.order.count({ where: { status: "delivered" } });
+    
+    // Sum total revenue
+    const orders = await prisma.order.findMany({
+      where: {
+        status: { in: ["delivered", "completed", "shipped"] }
+      }
+    });
+    const totalRevenue = orders.reduce((sum, order) => sum + order.grandTotal, 0);
+
+    const totalTestimonials = await prisma.testimonial.count();
+    const pendingTestimonials = await prisma.testimonial.count({ where: { status: "pending" } });
+    const totalBlogs = await prisma.blog.count();
+    const totalGallery = await prisma.gallery.count();
+    const totalSubscribers = await prisma.subscriber.count({ where: { status: "active" } });
+    const unreadMessages = await prisma.contact.count({ where: { status: "unread" } });
 
     // Aggregate testimonial interactions
-    const testimonials = await Testimonial.find();
+    const testimonials = await prisma.testimonial.findMany();
     let totalTestimonialLikes = 0;
     let totalTestimonialComments = 0;
     testimonials.forEach(t => {
-      totalTestimonialLikes += t.likes.length;
-      totalTestimonialComments += t.comments.length;
+      totalTestimonialLikes += t.likes ? t.likes.length : 0;
+      
+      let commentsList = t.comments;
+      if (typeof commentsList === "string") {
+        commentsList = JSON.parse(commentsList);
+      }
+      totalTestimonialComments += Array.isArray(commentsList) ? commentsList.length : 0;
     });
 
     // Aggregate blog interactions
-    const blogs = await Blog.find();
+    const blogs = await prisma.blog.findMany();
     let totalBlogLikes = 0;
     let totalBlogComments = 0;
     let totalBlogViews = 0;
-    blogs.forEach(b => {
-      totalBlogLikes += b.likes.length;
-      totalBlogComments += b.comments.length;
+    
+    for (const b of blogs) {
+      totalBlogLikes += b.likes ? b.likes.length : 0;
+      const commentsCount = await prisma.blogComment.count({
+        where: { blogId: b.id }
+      });
+      totalBlogComments += commentsCount;
       totalBlogViews += b.views;
-    });
+    }
 
     // Top blogs
-    const mostViewedBlogs = await Blog.find()
-      .select("title views slug image category")
-      .sort({ views: -1 })
-      .limit(5);
+    const mostViewedBlogs = await prisma.blog.findMany({
+      select: {
+        id: true,
+        title: true,
+        views: true,
+        slug: true,
+        image: true,
+        category: true,
+      },
+      orderBy: { views: "desc" },
+      take: 5
+    });
 
-    // Top testimonials (based on rating and comments/likes)
-    const mostPopularTestimonials = await Testimonial.find({ status: "approved" })
-      .select("name review rating viewCount likes")
-      .sort({ rating: -1, viewCount: -1 })
-      .limit(5);
+    // Top testimonials
+    const mostPopularTestimonials = await prisma.testimonial.findMany({
+      where: { status: "approved" },
+      select: {
+        id: true,
+        name: true,
+        review: true,
+        rating: true,
+        viewCount: true,
+        likes: true,
+      },
+      orderBy: [
+        { rating: "desc" },
+        { viewCount: "desc" }
+      ],
+      take: 5
+    });
 
-    // Dynamic visitor stats for the last 7 days (mock data for premium UX)
+    // Dynamic visitor & order stats for the last 7 days (mock data for premium UX)
     const visitorData = [
-      { day: "Mon", visitors: 420, reservations: 12 },
-      { day: "Tue", visitors: 380, reservations: 8 },
-      { day: "Wed", visitors: 490, reservations: 15 },
-      { day: "Thu", visitors: 520, reservations: 19 },
-      { day: "Fri", visitors: 680, reservations: 25 },
-      { day: "Sat", visitors: 850, reservations: 35 },
-      { day: "Sun", visitors: 920, reservations: 42 },
+      { day: "Mon", visitors: 420, orders: 12, sales: 8400 },
+      { day: "Tue", visitors: 380, orders: 8, sales: 5600 },
+      { day: "Wed", visitors: 490, orders: 15, sales: 11200 },
+      { day: "Thu", visitors: 520, orders: 19, sales: 13300 },
+      { day: "Fri", visitors: 680, orders: 25, sales: 17500 },
+      { day: "Sat", visitors: 850, orders: 35, sales: 24500 },
+      { day: "Sun", visitors: 920, orders: 42, sales: 29400 },
     ];
 
     res.status(200).json({
       success: true,
       stats: {
         totalUsers,
-        totalReservations,
-        pendingReservations,
-        approvedReservations,
+        totalOrders,
+        pendingOrders,
+        completedOrders,
+        totalRevenue,
         totalTestimonials,
         pendingTestimonials,
         totalBlogs,
@@ -94,21 +127,27 @@ export const getDashboardStats = async (req, res, next) => {
 export const adminGetUsers = async (req, res, next) => {
   try {
     const { search, role } = req.query;
-    let query = {};
+    const where = {};
 
     if (role) {
-      query.role = role;
+      where.role = role;
     }
 
     if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { phone: { $regex: search, $options: "i" } },
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+        { phone: { contains: search, mode: "insensitive" } },
       ];
     }
 
-    const users = await User.find(query).select("-password").sort({ createdAt: -1 });
+    const users = await prisma.user.findMany({
+      where,
+      orderBy: { createdAt: "desc" }
+    });
+
+    users.forEach(u => delete u.password);
+
     res.status(200).json({ success: true, users });
   } catch (error) {
     next(error);
@@ -129,10 +168,12 @@ export const adminUpdateUserRole = async (req, res, next) => {
       return res.status(400).json({ success: false, message: "You cannot change your own role" });
     }
 
-    const user = await User.findByIdAndUpdate(id, { role }, { new: true }).select("-password");
-    if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
-    }
+    const user = await prisma.user.update({
+      where: { id },
+      data: { role }
+    });
+
+    delete user.password;
 
     res.status(200).json({ success: true, message: "User role updated successfully", user });
   } catch (error) {
@@ -148,10 +189,7 @@ export const adminDeleteUser = async (req, res, next) => {
       return res.status(400).json({ success: false, message: "You cannot delete your own account" });
     }
 
-    const user = await User.findByIdAndDelete(id);
-    if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
-    }
+    await prisma.user.delete({ where: { id } });
 
     res.status(200).json({ success: true, message: "User deleted successfully" });
   } catch (error) {

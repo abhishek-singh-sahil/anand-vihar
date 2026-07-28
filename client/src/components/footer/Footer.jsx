@@ -21,7 +21,6 @@ function Footer() {
     { name: "Menu", path: "/menu" },
     { name: "Offers", path: "/offers" },
     { name: "Gallery", path: "/gallery" },
-    ...(settings?.reservationsEnabled ? [{ name: "Reservation", path: "/reservation" }] : []),
     { name: "About", path: "/about" },
     { name: "Contact", path: "/contact" },
   ];
@@ -143,15 +142,6 @@ function Footer() {
                 <p className="text-[#ffefb3] my-1 text-xs uppercase font-bold tracking-widest">to</p>
                 <p className="text-lg text-orange-500 font-bold">10:30 PM</p>
               </div>
-
-              {settings?.reservationsEnabled && (
-                <Link
-                  to="/reservation"
-                  className="block text-center bg-[#ff9248] text-white hover:bg-[#ea5a00] rounded-xl py-3 font-semibold transition cursor-pointer shadow-sm no-underline"
-                >
-                  Reserve Table Slots
-                </Link>
-              )}
             </div>
           </div>
 

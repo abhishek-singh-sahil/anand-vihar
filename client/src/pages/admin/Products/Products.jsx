@@ -17,13 +17,14 @@ function Products() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
-  const [category, setCategory] = useState("");
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
   const [image, setImage] = useState(null);
   const [veg, setVeg] = useState(true);
   const [bestseller, setBestseller] = useState(false);
   const [popular, setPopular] = useState(false);
   const [isNew, setIsNew] = useState(false);
   const [available, setAvailable] = useState(true);
+  const [variants, setVariants] = useState([]);
   
   // Selection
   const [selectedIds, setSelectedIds] = useState([]);
@@ -52,9 +53,6 @@ function Products() {
       const response = await api.get("/menu/categories");
       if (response.data.success) {
         setCategories(response.data.categories);
-        if (response.data.categories.length > 0) {
-          setCategory(response.data.categories[0].name);
-        }
       }
     } catch (error) {
       console.error(error);
@@ -79,15 +77,14 @@ function Products() {
     setName("");
     setDescription("");
     setPrice("");
-    if (categories.length > 0) {
-      setCategory(categories[0].name);
-    }
+    setSelectedCategoryIds([]);
     setImage(null);
     setVeg(true);
     setBestseller(false);
     setPopular(false);
     setIsNew(false);
     setAvailable(true);
+    setVariants([{ weight: "250g", price: "", discount: 0, stock: 100, sku: "", active: true }]);
     setShowModal(true);
   };
 
@@ -96,32 +93,42 @@ function Products() {
     setName(item.name);
     setDescription(item.description);
     setPrice(item.price);
-    setCategory(item.category);
+    setSelectedCategoryIds(item.categoryIds || []);
     setImage(null);
     setVeg(item.veg);
     setBestseller(item.bestseller || false);
     setPopular(item.popular || false);
     setIsNew(item.isNew || false);
     setAvailable(item.available !== false);
+    setVariants(item.variants ? item.variants.map(v => ({ weight: v.weight, price: v.price, discount: v.discount || 0, stock: v.stock || 0, sku: v.sku || "", active: v.active !== false })) : []);
     setShowModal(true);
   };
 
+  const addVariant = () => setVariants(prev => [...prev, { weight: "", price: "", discount: 0, stock: 100, sku: "", active: true }]);
+  const removeVariant = (idx) => setVariants(prev => prev.filter((_, i) => i !== idx));
+  const updateVariant = (idx, field, value) => setVariants(prev => prev.map((v, i) => i === idx ? { ...v, [field]: value } : v));
+
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    if (!name || !price || !category || !description) {
-      return toast.error("Please fill in all text fields");
+    if (!name || !description) {
+      return toast.error("Please fill in name and description");
+    }
+    if (selectedCategoryIds.length === 0) {
+      return toast.error("Please select at least one category");
     }
 
     const formData = new FormData();
     formData.append("name", name);
     formData.append("description", description);
-    formData.append("price", price);
-    formData.append("category", category);
+    formData.append("categories", JSON.stringify(selectedCategoryIds));
     formData.append("veg", veg);
     formData.append("bestseller", bestseller);
     formData.append("popular", popular);
     formData.append("isNew", isNew);
     formData.append("available", available);
+    if (variants.length > 0) {
+      formData.append("variants", JSON.stringify(variants));
+    }
 
     if (image) {
       formData.append("image", image);
@@ -277,8 +284,15 @@ function Products() {
                       </div>
                     </div>
                   </td>
-                  <td className="py-4 px-2 text-sm text-gray-500 font-semibold">{item.category}</td>
-                  <td className="py-4 px-2 text-sm font-extrabold text-gray-800">₹{item.price}</td>
+                  <td className="py-4 px-2 text-sm text-gray-500 font-semibold">
+                    {(item.categories || [item.category]).join(", ")}
+                  </td>
+                  <td className="py-4 px-2 text-sm font-extrabold text-gray-800">
+                    ₹{item.variants && item.variants.length > 0 ? item.variants[0].price : item.price}
+                    {item.variants && item.variants.length > 0 && (
+                      <span className="ml-1 text-[10px] font-normal text-gray-400">{item.variants.length} sizes</span>
+                    )}
+                  </td>
                   <td className="py-4 px-2">
                     <div className="flex gap-1.5 flex-wrap">
                       {item.bestseller && <span className="bg-orange-50 text-[#ff9248] text-[9px] font-bold px-1.5 py-0.5 rounded">Best</span>}
@@ -332,29 +346,45 @@ function Products() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Price (₹)</label>
+                  <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Price (₹) — base (variant prices override this)</label>
                   <input
                     type="number"
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
-                    required
+                    placeholder="Leave blank if using variants only"
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-[#ff9248]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Category</label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    required
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-[#ff9248]"
-                  >
-                    {categories.map(c => (
-                      <option key={c._id} value={c.name}>{c.name}</option>
-                    ))}
-                  </select>
+                  <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Categories (select one or more) *</label>
+                  <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto bg-gray-50 rounded-xl p-3 border border-gray-200">
+                    {categories.map((c) => {
+                      const catId = c.id || c._id;
+                      const checked = selectedCategoryIds.includes(catId);
+                      return (
+                        <label key={catId} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-white rounded-lg px-2 py-1 transition">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              setSelectedCategoryIds(prev =>
+                                checked ? prev.filter(id => id !== catId) : [...prev, catId]
+                              );
+                            }}
+                            className="accent-[#ff9248] w-4 h-4"
+                          />
+                          <span className="font-semibold text-gray-700 text-xs">{c.name}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {selectedCategoryIds.length > 0 && (
+                    <p className="text-[11px] text-[#ff9248] font-semibold mt-1">
+                      {selectedCategoryIds.length} categor{selectedCategoryIds.length > 1 ? "ies" : "y"} selected
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -377,6 +407,66 @@ function Products() {
                   onChange={(e) => setImage(e.target.files[0])}
                   className="w-full text-xs text-gray-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-[#ff9248] hover:file:bg-orange-100"
                 />
+              </div>
+
+              {/* Weight Variants Editor */}
+              <div className="border border-gray-200 rounded-2xl p-4 space-y-3 bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-gray-500 uppercase">Weight Variants</label>
+                  <button
+                    type="button"
+                    onClick={addVariant}
+                    className="text-xs font-bold text-[#ff9248] bg-orange-50 px-3 py-1 rounded-lg border-none cursor-pointer hover:bg-orange-100"
+                  >
+                    + Add Variant
+                  </button>
+                </div>
+
+                {variants.length === 0 && (
+                  <p className="text-xs text-gray-400 text-center py-2">No variants added. Click + Add Variant to start.</p>
+                )}
+
+                {variants.map((v, idx) => (
+                  <div key={idx} className="grid grid-cols-5 gap-2 items-center bg-white rounded-xl p-2 border border-gray-100">
+                    <input
+                      placeholder="Weight e.g. 250g"
+                      value={v.weight}
+                      onChange={(e) => updateVariant(idx, "weight", e.target.value)}
+                      className="col-span-1 text-xs px-2 py-1.5 border border-gray-200 rounded-lg focus:outline-none"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Price ₹"
+                      value={v.price}
+                      onChange={(e) => updateVariant(idx, "price", e.target.value)}
+                      className="col-span-1 text-xs px-2 py-1.5 border border-gray-200 rounded-lg focus:outline-none"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Discount"
+                      value={v.discount}
+                      onChange={(e) => updateVariant(idx, "discount", e.target.value)}
+                      className="col-span-1 text-xs px-2 py-1.5 border border-gray-200 rounded-lg focus:outline-none"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Stock"
+                      value={v.stock}
+                      onChange={(e) => updateVariant(idx, "stock", e.target.value)}
+                      className="col-span-1 text-xs px-2 py-1.5 border border-gray-200 rounded-lg focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeVariant(idx)}
+                      className="text-red-400 hover:text-red-600 bg-transparent border-none cursor-pointer text-xs font-bold text-center"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+                {variants.length > 0 && (
+                  <p className="text-[10px] text-gray-400">Fields: Weight · Price · Discount · Stock · [remove]</p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-2xl">

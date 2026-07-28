@@ -52,15 +52,12 @@ const categories = [
 function Categories() {
   const { settings } = useAuth();
 
-  // Show only 3 sweet-related cards if restaurant mode (reservations) is off
-  const displayedCategories = (settings?.reservationsEnabled)
-    ? categories
-    : categories.filter(
-        (c) =>
-          c.title === "Traditional Sweets" ||
-          c.title === "Beverages" ||
-          c.title === "Ice Cream"
-      );
+  const displayedCategories = categories.filter(
+    (c) =>
+      c.title === "Traditional Sweets" ||
+      c.title === "Beverages" ||
+      c.title === "Ice Cream"
+  );
 
   return (
     <section className="py-24 bg-[var(--bg-main)] font-sans">

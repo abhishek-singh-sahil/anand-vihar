@@ -15,6 +15,8 @@ import {
   FaSignOutAlt,
   FaBars,
   FaTimes,
+  FaMapMarkerAlt,
+  FaTicketAlt,
 } from "react-icons/fa";
 
 function AdminLayout() {
@@ -27,7 +29,9 @@ function AdminLayout() {
     { name: "Dashboard", path: "/admin/dashboard", icon: <FaChartBar /> },
     { name: "Menu Items", path: "/admin/products", icon: <FaUtensils /> },
     { name: "Categories", path: "/admin/categories", icon: <FaTags /> },
-    { name: "Reservations", path: "/admin/reservations", icon: <FaCalendarCheck /> },
+    { name: "Delivery Zones", path: "/admin/pincodes", icon: <FaMapMarkerAlt /> },
+    { name: "Coupons", path: "/admin/coupons", icon: <FaTicketAlt /> },
+    { name: "Orders Manager", path: "/admin/orders", icon: <FaCalendarCheck /> },
     { name: "Users List", path: "/admin/customers", icon: <FaUsers /> },
     { name: "Testimonials", path: "/admin/testimonials", icon: <FaCommentDots /> },
     { name: "Blogs Manager", path: "/admin/blogs", icon: <FaBookOpen /> },
@@ -54,7 +58,7 @@ function AdminLayout() {
 
       {/* Left Sidebar Drawer */}
       <aside
-        className={`w-64 bg-[#013e37] text-white flex flex-col justify-between fixed lg:sticky top-0 h-screen z-[99] transition-transform duration-300 ${
+        className={`w-64 bg-[#013e37] text-white flex flex-col justify-between fixed lg:sticky top-0 h-screen z-[99] transition-transform duration-300 overflow-y-auto scrollbar-thin ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >

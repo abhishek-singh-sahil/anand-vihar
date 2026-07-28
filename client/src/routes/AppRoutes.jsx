@@ -14,7 +14,8 @@ import About from "../pages/About/About";
 import Menu from "../pages/Menu/Menu";
 import Offers from "../pages/Offers/Offers";
 import Gallery from "../pages/Gallery/Gallery";
-import Reservation from "../pages/Reservation/Reservation";
+import Cart from "../pages/Cart/Cart";
+import Checkout from "../pages/Checkout/Checkout";
 import Contact from "../pages/Contact/Contact";
 import Login from "../pages/Login/Login";
 import Register from "../pages/Register/Register";
@@ -36,12 +37,14 @@ import FAQ from "../pages/FAQ/FAQ";
 import Dashboard from "../pages/admin/Dashboard/Dashboard";
 import Products from "../pages/admin/Products/Products";
 import Categories from "../pages/admin/Categories/Categories";
-import ReservationsAdmin from "../pages/admin/Reservations/Reservations";
+import OrdersAdmin from "../pages/admin/Orders/Orders";
 import Customers from "../pages/admin/Customers/Customers";
 import TestimonialsAdmin from "../pages/admin/Testimonials/Testimonials";
 import BlogsAdmin from "../pages/admin/Blogs/Blogs";
 import GalleryAdmin from "../pages/admin/Gallery/Gallery";
 import Settings from "../pages/admin/Settings/Settings";
+import PinCodes from "../pages/admin/PinCodes/PinCodes";
+import Coupons from "../pages/admin/Coupons/Coupons";
 
 // Protect route wrapper
 const ProtectedRoute = ({ children, adminOnly = false }) => {
@@ -87,7 +90,15 @@ function AppRoutes() {
           }
         />
         <Route path="blogs/:slug" element={<BlogDetail />} />
-        <Route path="reservation" element={<Reservation />} />
+        <Route path="cart" element={<Cart />} />
+        <Route
+          path="checkout"
+          element={
+            <ProtectedRoute>
+              <Checkout />
+            </ProtectedRoute>
+          }
+        />
         <Route path="contact" element={<Contact />} />
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
@@ -124,12 +135,14 @@ function AppRoutes() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="products" element={<Products />} />
         <Route path="categories" element={<Categories />} />
-        <Route path="reservations" element={<ReservationsAdmin />} />
+        <Route path="orders" element={<OrdersAdmin />} />
         <Route path="customers" element={<Customers />} />
         <Route path="testimonials" element={<TestimonialsAdmin />} />
         <Route path="blogs" element={<BlogsAdmin />} />
         <Route path="gallery" element={<GalleryAdmin />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="pincodes" element={<PinCodes />} />
+        <Route path="coupons" element={<Coupons />} />
       </Route>
 
       {/* ================= 404 ================= */}

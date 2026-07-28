@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import User from "../models/User.js";
+import { prisma } from "../config/db.js";
 
 export const protect = async (req, res, next) => {
   try {
@@ -28,13 +28,18 @@ export const protect = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     // Fetch user and exclude password
-    const user = await User.findById(decoded.id).select("-password");
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id }
+    });
     if (!user) {
       return res.status(401).json({
         success: false,
         message: "Session expired. User no longer exists.",
       });
     }
+
+    // Exclude password field
+    delete user.password;
 
     req.user = user;
     next();

@@ -1,17 +1,22 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Sparkles, SlidersHorizontal } from "lucide-react";
+import { Search, Sparkles, ShoppingBag } from "lucide-react";
 import api from "../../services/api";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../../hooks/useAuth";
+import { useCart } from "../../context/CartContext";
+import { useNavigate } from "react-router-dom";
 
 function Menu() {
-  const { settings } = useAuth();
+  const { settings, isAuthenticated } = useAuth();
+  const { addToCart } = useCart();
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState(["All"]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [selectedVariants, setSelectedVariants] = useState({});
   
   // Tag filters
   const [vegOnly, setVegOnly] = useState(false);
@@ -23,13 +28,7 @@ function Menu() {
     try {
       const res = await api.get("/menu/categories");
       if (res.data.success) {
-        let catNames = res.data.categories.map(c => c.name);
-        if (settings && !settings.reservationsEnabled) {
-          catNames = catNames.filter(name => 
-            name.toLowerCase().includes("sweet") || 
-            name.toLowerCase().includes("beverage")
-          );
-        }
+        const catNames = res.data.categories.map(c => c.name);
         setCategories(["All", ...catNames]);
       }
     } catch (error) {
@@ -51,14 +50,7 @@ function Menu() {
 
       const res = await api.get(url);
       if (res.data.success) {
-        let loadedItems = res.data.items;
-        if (settings && !settings.reservationsEnabled) {
-          loadedItems = loadedItems.filter(item => 
-            item.category.toLowerCase().includes("sweet") || 
-            item.category.toLowerCase().includes("beverage")
-          );
-        }
-        setItems(loadedItems);
+        setItems(res.data.items);
       }
     } catch (error) {
       console.error("Could not load menu items:", error);
@@ -289,30 +281,86 @@ function Menu() {
                       <p className="text-gray-500 text-xs leading-relaxed line-clamp-3">
                         {item.description}
                       </p>
+                      {/* Weight Variant Pills */}
+                      {item.variants && item.variants.length > 1 && (
+                        <div className="mt-4 flex flex-wrap gap-1.5">
+                          {item.variants.map((v, vIdx) => {
+                            const isSelected = (selectedVariants[item._id] || 0) === vIdx;
+                            return (
+                              <button
+                                key={v.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedVariants(prev => ({ ...prev, [item._id]: vIdx }));
+                                }}
+                                className={`px-2 py-1 text-[10px] font-bold rounded-lg border transition-all cursor-pointer ${
+                                  isSelected
+                                    ? "bg-[#013e37] text-white border-[#013e37] shadow-sm"
+                                    : "bg-white text-gray-500 border-gray-200 hover:border-[#013e37]"
+                                }`}
+                              >
+                                {v.weight}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
 
                     <div className="mt-6 pt-4 border-t border-gray-50 flex items-center justify-between">
-                      <span className="text-2xl font-extrabold text-[#013e37]">₹{item.price}</span>
+                      <span className="text-2xl font-extrabold text-[#013e37]">
+                        ₹{item.variants && item.variants.length > 0
+                          ? item.variants[selectedVariants[item._id] || 0].price
+                          : item.price}
+                      </span>
                       {settings?.orderingEnabled ? (
                         <button
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
-                            toast.success(`Added ${item.name} to cart!`);
+                            if (!isAuthenticated) {
+                              toast.error("Please login to buy sweets!");
+                              navigate("/login");
+                              return;
+                            }
+                            const activeVar = item.variants && item.variants.length > 0
+                              ? item.variants[selectedVariants[item._id] || 0]
+                              : null;
+                            const success = await addToCart(item._id, 1, activeVar?.id);
+                            if (success) {
+                              toast.success(`Added ${item.name} (${activeVar?.weight || ""}) to cart!`);
+                            } else {
+                              toast.error("Failed to add to cart.");
+                            }
                           }}
-                          disabled={!item.available}
-                          className="px-4.5 py-2 bg-[#ff9248] text-white text-xs font-bold rounded-xl hover:bg-[#ea5a00] transition cursor-pointer disabled:opacity-50 shadow-sm"
+                          disabled={
+                            item.variants && item.variants.length > 0
+                              ? item.variants[selectedVariants[item._id] || 0].stock <= 0
+                              : !item.available
+                          }
+                          className="flex items-center gap-1.5 px-5 py-2.5 bg-[#ff9248] text-white text-xs font-bold rounded-2xl hover:bg-[#ea5a00] active:scale-95 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg border-none whitespace-nowrap"
                         >
-                          Add to Cart
+                          <ShoppingBag size={14} />
+                          {(item.variants && item.variants.length > 0
+                            ? item.variants[selectedVariants[item._id] || 0].stock <= 0
+                            : !item.available)
+                            ? "Out of Stock"
+                            : "Add to Cart"}
                         </button>
                       ) : (
                         <span
                           className={`text-xs font-bold px-3 py-1 rounded-full ${
-                            item.available
+                            (item.variants && item.variants.length > 0
+                              ? item.variants[selectedVariants[item._id] || 0].stock > 0
+                              : item.available)
                               ? "bg-green-50 text-green-700"
                               : "bg-red-50 text-red-700"
                           }`}
                         >
-                          {item.available ? "Available" : "Sold Out"}
+                          {(item.variants && item.variants.length > 0
+                            ? item.variants[selectedVariants[item._id] || 0].stock > 0
+                            : item.available)
+                            ? "Available"
+                            : "Sold Out"}
                         </span>
                       )}
                     </div>
@@ -372,24 +420,16 @@ function Menu() {
             className="overflow-hidden rounded-[36px] bg-gradient-to-r from-[#013e37] to-[#045148] px-10 py-16 text-center text-white shadow-xl"
           >
             <span className="inline-flex rounded-full bg-white/10 px-6 py-2 text-xs font-semibold uppercase tracking-wider text-[#ffefb3]">
-              Anand Vihar Restaurant
+              Anand Vihar Sweet Shop
             </span>
             <h2 className="mt-6 text-4xl font-extrabold md:text-5xl">Craving Something Delicious?</h2>
             <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-white/80">
-              Explore our complete collection of traditional sweets and delicious meals. Visit near Jhanda Chowk to enjoy them fresh with your family{settings?.reservationsEnabled ? ", or book a table slot in advance!" : "!"}
+              Explore our complete collection of traditional sweets. Visit near Jhanda Chowk to enjoy them fresh with your family!
             </p>
             <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
-              {settings?.reservationsEnabled && (
-                <a
-                  href="/reservation"
-                  className="rounded-full bg-[#ff9248] hover:bg-[#ea5a00] px-8 py-4 font-bold text-white transition hover:scale-105 shadow-md flex items-center justify-center text-center cursor-pointer"
-                >
-                  Book A Table Slots
-                </a>
-              )}
               <a
                 href="/contact"
-                className="rounded-full border border-white hover:bg-white hover:text-[#013e37] px-8 py-4 font-bold transition hover:scale-105 flex items-center justify-center text-center cursor-pointer"
+                className="rounded-full border border-white hover:bg-white hover:text-[#013e37] px-8 py-4 font-bold transition hover:scale-105 flex items-center justify-center text-center cursor-pointer no-underline text-white"
               >
                 Get Directions / Contact Us
               </a>

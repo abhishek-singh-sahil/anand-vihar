@@ -1,0 +1,351 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                    String            @id @default(uuid())
+  email                 String            @unique
+  name                  String
+  password              String
+  phone                 String            @default("")
+  role                  String            @default("user") // "user" | "admin"
+  profilePic            String            @default("")
+  isVerified            Boolean           @default(false)
+  
+  refreshTokens         RefreshToken[]
+  addresses             Address[]
+  cartItems             CartItem[]
+  orders                Order[]
+  blogComments          BlogComment[]
+  reviews               ProductReview[]
+  questions             ProductQuestion[]
+
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model OtpToken {
+  id        String   @id @default(uuid())
+  email     String
+  otp       String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Category {
+  id              String    @id @default(uuid())
+  name            String    @unique
+  description     String    @default("")
+  image           String    @default("")
+  status          Boolean   @default(true) // Active/Inactive
+  displayOrder    Int       @default(0)
+  isFeatured      Boolean   @default(false)
+  slug            String    @unique
+  metaTitle       String    @default("")
+  metaDescription String    @default("")
+  products        Product[] @relation("ProductCategories")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Product {
+  id                 String           @id @default(uuid())
+  name               String
+  description        String
+  image              String
+  gallery            String[]         @default([])
+  video              String           @default("")
+  available          Boolean          @default(true)
+  
+  isBestSeller       Boolean          @default(false)
+  isFeatured         Boolean          @default(false)
+  isNewArrival       Boolean          @default(false)
+  isTrending         Boolean          @default(false)
+  isFestivalSpecial  Boolean          @default(false)
+  isLimitedEdition   Boolean          @default(false)
+  isComingSoon       Boolean          @default(false)
+  
+  // Attributes
+  ingredients        String           @default("")
+  shelfLife          String           @default("")
+  storageInstructions String          @default("")
+  prepType           String           @default("")
+  isPureVeg          Boolean          @default(true)
+  fssaiNumber        String           @default("")
+  manufacturer       String           @default("")
+  manufactureDate    String           @default("")
+  expiryDate         String           @default("")
+  countryOfOrigin    String           @default("India")
+  
+  tags               String[]         @default([])
+  categories         Category[]       @relation("ProductCategories")
+  variants           ProductVariant[]
+  reviews            ProductReview[]
+  questions          ProductQuestion[]
+  orderItems         OrderItem[]
+  cartItems          CartItem[]
+  
+  // SEO
+  slug               String           @unique
+  metaTitle          String           @default("")
+  metaDescription    String           @default("")
+  ogImage            String           @default("")
+
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
+
+model ProductVariant {
+  id        String     @id @default(uuid())
+  productId String
+  product   Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  weight    String     // e.g. "250g", "500g", "1kg"
+  price     Float
+  discount  Float      @default(0.0)
+  stock     Int        @default(0)
+  sku       String     @default("")
+  active    Boolean    @default(true)
+  cartItems CartItem[]
+  orderItems OrderItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model ProductReview {
+  id                 String   @id @default(uuid())
+  rating             Int
+  comment            String
+  images             String[] @default([])
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name               String   // display name
+  replies            Json     @default("[]") // array of response objects
+  likes              String[] @default([]) // user ids or IP addresses
+  productId          String
+  product            Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  status             String   @default("approved") // "pending" | "approved" | "rejected"
+  isVerifiedPurchase Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model ProductQuestion {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String   // display name
+  question  String
+  answer    String   @default("")
+  isPublic  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Address {
+  id          String   @id @default(uuid())
+  fullName    String
+  phone       String
+  state       String
+  city        String
+  pinCode     String
+  houseNumber String
+  street      String
+  landmark    String   @default("")
+  isDefault   Boolean  @default(false)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CartItem {
+  id        String          @id @default(uuid())
+  productId String
+  product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantId String?
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  quantity  Int
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Order {
+  id            String      @id @default(uuid())
+  orderNumber   String      @unique
+  userId        String?
+  user          User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  paymentMethod String      @default("COD") // "COD" | "WHATSAPP"
+  totalAmount   Float
+  status        String      @default("pending") // "pending" | "confirmed" | "preparing" | "packed" | "shipped" | "delivered" | "cancelled"
+  shippingCharge Float      @default(0.0)
+  grandTotal    Float
+  notes         String      @default("")
+  
+  // Snapshot address at order time
+  name          String
+  phone         String
+  state         String
+  city          String
+  pinCode       String
+  houseNumber   String
+  street        String
+  landmark      String      @default("")
+  
+  items         OrderItem[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        String          @id @default(uuid())
+  orderId   String
+  order     Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String?
+  product   Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  variantId String?
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  name      String
+  weight    String          @default("") // variant weight details
+  price     Float
+  quantity  Int
+  image     String
+}
+
+model Coupon {
+  id             String   @id @default(uuid())
+  code           String   @unique
+  discountType   String   @default("PERCENTAGE") // "PERCENTAGE" | "FLAT"
+  discountValue  Float
+  minOrderAmount Float    @default(0.0)
+  expiryDate     DateTime
+  active         Boolean  @default(true)
+  usageLimit     Int?
+  usageCount     Int      @default(0)
+}
+
+model PinCodeZone {
+  id             String   @id @default(uuid())
+  code           String   @unique
+  areaName       String   @default("")
+  deliveryCharge Float
+  deliveryTime   String   @default("Same Day")
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Offer {
+  id             String    @id @default(uuid())
+  title          String
+  description    String    @default("")
+  type           String    // "FLAT" | "PERCENTAGE" | "BUY_X_GET_Y"
+  value          Float     @default(0.0)
+  buyQty         Int       @default(0)
+  getQty         Int       @default(0)
+  targetType     String    // "PRODUCT" | "CATEGORY" | "ORDER"
+  targetId       String?
+  active         Boolean   @default(true)
+  startDate      DateTime  @default(now())
+  endDate        DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Blog {
+  id              String        @id @default(uuid())
+  title           String
+  slug            String        @unique
+  category        String
+  content         String
+  image           String
+  views           Int           @default(0)
+  likes           String[]      @default([])
+  comments        BlogComment[]
+  metaTitle       String        @default("")
+  metaDescription String        @default("")
+  ogImage         String        @default("")
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model BlogComment {
+  id        String   @id @default(uuid())
+  blogId    String
+  blog      Blog     @relation(fields: [blogId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  text      String
+  createdAt DateTime @default(now())
+}
+
+model Testimonial {
+  id             String   @id @default(uuid())
+  name           String
+  city           String
+  phone          String   @default("")
+  rating         Int
+  review         String
+  images         String[] @default([])
+  video          String   @default("")
+  status         String   @default("approved") // "pending" | "approved" | "rejected"
+  likes          String[] @default([])
+  emojiReactions Json     @default("{\"thumbsUp\":[],\"heart\":[],\"clap\":[],\"laugh\":[]}")
+  comments       Json     @default("[]")
+  viewCount      Int      @default(0)
+  isPinned       Boolean  @default(false)
+  isFeatured     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Gallery {
+  id        String   @id @default(uuid())
+  image     String
+  caption   String   @default("")
+  category  String   @default("Sweets")
+  createdAt DateTime @default(now())
+}
+
+model Setting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  description String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Contact {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  phone     String   @default("")
+  subject   String   @default("")
+  message   String
+  status    String   @default("unread") // "read" | "unread"
+  createdAt DateTime @default(now())
+}
+
+model Subscriber {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  status    String   @default("active") // "active" | "unsubscribed"
+  createdAt DateTime @default(now())
+}

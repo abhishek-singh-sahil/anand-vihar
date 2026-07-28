@@ -1,18 +1,30 @@
-import Setting from "../models/Setting.js";
+import { prisma } from "../config/db.js";
 
 // Get current system settings
 export const getSettings = async (req, res, next) => {
   try {
-    let settings = await Setting.findOne();
-    if (!settings) {
-      settings = await Setting.create({
-        reservationsEnabled: true,
-        orderingEnabled: true,
-      });
-    }
+    const list = await prisma.setting.findMany();
+    const settingsObj = {};
+    
+    list.forEach(item => {
+      if (item.value === "true") {
+        settingsObj[item.key] = true;
+      } else if (item.value === "false") {
+        settingsObj[item.key] = false;
+      } else {
+        settingsObj[item.key] = item.value;
+      }
+    });
+
+    // Provide default fallback values if empty
+    if (settingsObj.reservationsEnabled === undefined) settingsObj.reservationsEnabled = false; // default off for sweet shop
+    if (settingsObj.orderingEnabled === undefined) settingsObj.orderingEnabled = true; // default on for e-commerce
+    if (settingsObj.whatsappNumber === undefined) settingsObj.whatsappNumber = "+919934190109";
+    if (settingsObj.shopName === undefined) settingsObj.shopName = "Anand Vihar Sweet Shop";
+
     return res.status(200).json({
       success: true,
-      settings,
+      settings: settingsObj,
     });
   } catch (error) {
     next(error);
@@ -22,25 +34,35 @@ export const getSettings = async (req, res, next) => {
 // Update settings (Admin only)
 export const updateSettings = async (req, res, next) => {
   try {
-    const { reservationsEnabled, orderingEnabled } = req.body;
-    let settings = await Setting.findOne();
-    if (!settings) {
-      settings = new Setting();
+    const body = req.body;
+    
+    for (const key in body) {
+      if (Object.prototype.hasOwnProperty.call(body, key)) {
+        const valStr = String(body[key]);
+        await prisma.setting.upsert({
+          where: { key },
+          update: { value: valStr },
+          create: { key, value: valStr }
+        });
+      }
     }
 
-    if (typeof reservationsEnabled === "boolean") {
-      settings.reservationsEnabled = reservationsEnabled;
-    }
-    if (typeof orderingEnabled === "boolean") {
-      settings.orderingEnabled = orderingEnabled;
-    }
-
-    await settings.save();
+    const list = await prisma.setting.findMany();
+    const settingsObj = {};
+    list.forEach(item => {
+      if (item.value === "true") {
+        settingsObj[item.key] = true;
+      } else if (item.value === "false") {
+        settingsObj[item.key] = false;
+      } else {
+        settingsObj[item.key] = item.value;
+      }
+    });
 
     return res.status(200).json({
       success: true,
       message: "Settings updated successfully",
-      settings,
+      settings: settingsObj,
     });
   } catch (error) {
     next(error);

@@ -17,8 +17,8 @@ const stats = [
   {
     icon: UtensilsCrossed,
     number: "150+",
-    title: "Food & Sweet Items",
-    description: "A wide variety of delicious meals and sweets.",
+    title: "Premium Sweet Items",
+    description: "A wide variety of delicious traditional sweets.",
     color: "#013e37",
   },
   {
@@ -69,7 +69,7 @@ function Stats() {
 
           <p className="mt-6 text-white/80 leading-8">
             Years of dedication, thousands of satisfied customers,
-            and an ever-growing collection of delicious food and sweets.
+            and an ever-growing collection of delicious traditional sweets.
           </p>
         </motion.div>
 

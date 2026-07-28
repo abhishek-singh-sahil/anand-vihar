@@ -341,14 +341,6 @@ function About() {
             </p>
 
             <div className="mt-12 flex flex-col justify-center gap-5 sm:flex-row">
-              {settings?.reservationsEnabled && (
-                <Link
-                  to="/reservation"
-                  className="rounded-full bg-[#ff9248] hover:bg-[#ea5a00] px-9 py-4 text-base sm:text-lg font-semibold transition hover:scale-105 text-white text-center cursor-pointer no-underline min-w-[150px]"
-                >
-                  Book A Table
-                </Link>
-              )}
               <Link
                 to="/contact"
                 className="rounded-full border-2 border-white hover:bg-white hover:text-[#013e37] px-9 py-4 text-base sm:text-lg font-semibold transition hover:scale-105 text-white text-center cursor-pointer no-underline min-w-[150px]"

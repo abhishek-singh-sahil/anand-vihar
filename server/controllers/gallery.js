@@ -1,67 +1,61 @@
-import Gallery from "../models/Gallery.js";
+import { prisma } from "../config/db.js";
 import { uploadToCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
-
-import Testimonial from "../models/Testimonial.js";
 
 export const getGalleryItems = async (req, res, next) => {
   try {
-    const { category, type } = req.query;
-    let query = {};
-
+    const { category } = req.query;
+    const where = {};
     if (category && category !== "All") {
-      query.category = category;
+      where.category = category;
     }
 
-    if (type) {
-      query.type = type;
-    }
+    const dbItems = await prisma.gallery.findMany({
+      where,
+      orderBy: { createdAt: "desc" }
+    });
 
-    // 1. Fetch manual gallery items
-    const dbItems = await Gallery.find(query).sort({ createdAt: -1 });
+    // Map fields so the frontend gets exactly what it expects
+    const plainDbItems = dbItems.map(item => ({
+      _id: item.id,
+      title: item.caption,
+      category: item.category,
+      type: "image",
+      url: item.image,
+      createdAt: item.createdAt
+    }));
 
-    // 2. Fetch approved testimonials media if category matches or category is All/empty
-    let testimonialMedia = [];
-    const isCatMatch = !category || category === "All" || category === "Restaurant";
-    
-    if (isCatMatch) {
-      const approvedReviews = await Testimonial.find({ status: "approved" });
-      
-      approvedReviews.forEach(t => {
-        // Add images
-        if (t.images && t.images.length > 0) {
-          t.images.forEach((imgUrl, idx) => {
-            if (!type || type === "image") {
-              testimonialMedia.push({
-                _id: `${t._id}_img_${idx}`,
-                title: `Review Photo - ${t.name}`,
-                category: "Restaurant",
-                type: "image",
-                url: imgUrl,
-                createdAt: t.createdAt
-              });
-            }
-          });
-        }
-        
-        // Add video
-        if (t.video && (!type || type === "video")) {
+    // Fetch approved testimonials media as well
+    const testimonialMedia = [];
+    const approvedReviews = await prisma.testimonial.findMany({
+      where: { status: "approved" }
+    });
+
+    approvedReviews.forEach(t => {
+      if (t.images && t.images.length > 0) {
+        t.images.forEach((imgUrl, idx) => {
           testimonialMedia.push({
-            _id: `${t._id}_vid`,
-            title: `Review Video - ${t.name}`,
-            category: "Restaurant",
-            type: "video",
-            url: t.video,
+            _id: `${t.id}_img_${idx}`,
+            title: `Review Photo - ${t.name}`,
+            category: "Sweets",
+            type: "image",
+            url: imgUrl,
             createdAt: t.createdAt
           });
-        }
-      });
-    }
+        });
+      }
+      if (t.video) {
+        testimonialMedia.push({
+          _id: `${t.id}_vid`,
+          title: `Review Video - ${t.name}`,
+          category: "Sweets",
+          type: "video",
+          url: t.video,
+          createdAt: t.createdAt
+        });
+      }
+    });
 
-    // 3. Merge, convert schemas to plain objects first
-    const plainDbItems = dbItems.map(item => item.toObject());
     const mergedItems = [...plainDbItems, ...testimonialMedia];
-
-    // 4. Sort by date descending
     mergedItems.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     res.status(200).json({ success: true, items: mergedItems });
@@ -72,28 +66,35 @@ export const getGalleryItems = async (req, res, next) => {
 
 export const createGalleryItem = async (req, res, next) => {
   try {
-    const { title, category, type } = req.body;
-
-    if (!title || !category || !type) {
-      return res.status(400).json({ success: false, message: "Title, Category, and Type are required" });
+    const { title, category } = req.body;
+    if (!title || !category) {
+      return res.status(400).json({ success: false, message: "Title and Category are required" });
     }
-
     if (!req.file) {
       return res.status(400).json({ success: false, message: "Media file is required" });
     }
 
-    const folder = type === "video" ? "anand_vihar_gallery_video" : "anand_vihar_gallery";
-    const uploadRes = await uploadToCloudinary(req.file.buffer, folder, type);
-
-    const galleryItem = new Gallery({
-      title,
-      category,
-      type,
-      url: uploadRes.secure_url,
+    const uploadRes = await uploadToCloudinary(req.file.buffer, "anand_vihar_gallery", "image");
+    const galleryItem = await prisma.gallery.create({
+      data: {
+        caption: title,
+        category,
+        image: uploadRes.secure_url
+      }
     });
 
-    await galleryItem.save();
-    res.status(201).json({ success: true, message: "Gallery item created successfully", galleryItem });
+    res.status(201).json({
+      success: true,
+      message: "Gallery item created successfully",
+      galleryItem: {
+        _id: galleryItem.id,
+        title: galleryItem.caption,
+        category: galleryItem.category,
+        type: "image",
+        url: galleryItem.image,
+        createdAt: galleryItem.createdAt
+      }
+    });
   } catch (error) {
     next(error);
   }
@@ -102,14 +103,12 @@ export const createGalleryItem = async (req, res, next) => {
 export const deleteGalleryItem = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const item = await Gallery.findById(id);
+    const item = await prisma.gallery.findUnique({ where: { id } });
     if (!item) {
       return res.status(404).json({ success: false, message: "Gallery item not found" });
     }
-
-    await deleteFromCloudinary(item.url);
-    await Gallery.findByIdAndDelete(id);
-
+    await deleteFromCloudinary(item.image);
+    await prisma.gallery.delete({ where: { id } });
     res.status(200).json({ success: true, message: "Gallery item deleted successfully" });
   } catch (error) {
     next(error);
@@ -122,13 +121,15 @@ export const bulkDeleteGalleryItems = async (req, res, next) => {
     if (!ids || !Array.isArray(ids)) {
       return res.status(400).json({ success: false, message: "Please provide an array of gallery IDs" });
     }
-
-    const items = await Gallery.find({ _id: { $in: ids } });
+    const items = await prisma.gallery.findMany({
+      where: { id: { in: ids } }
+    });
     for (const item of items) {
-      await deleteFromCloudinary(item.url);
+      await deleteFromCloudinary(item.image);
     }
-
-    await Gallery.deleteMany({ _id: { $in: ids } });
+    await prisma.gallery.deleteMany({
+      where: { id: { in: ids } }
+    });
     res.status(200).json({ success: true, message: "Gallery items batch deleted successfully" });
   } catch (error) {
     next(error);

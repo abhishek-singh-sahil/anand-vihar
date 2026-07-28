@@ -4,14 +4,12 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-import mongoSanitize from "express-mongo-sanitize";
 
 import connectDB from "./config/db.js";
 
 // Routes imports
 import authRoutes from "./routes/auth.js";
 import menuRoutes from "./routes/menu.js";
-import reservationRoutes from "./routes/reservation.js";
 import testimonialRoutes from "./routes/testimonial.js";
 import blogRoutes from "./routes/blog.js";
 import galleryRoutes from "./routes/gallery.js";
@@ -19,9 +17,18 @@ import contactRoutes from "./routes/contact.js";
 import analyticsRoutes from "./routes/analytics.js";
 import settingRoutes from "./routes/setting.js";
 
+import cartRoutes from "./routes/cart.js";
+import addressRoutes from "./routes/address.js";
+import orderRoutes from "./routes/order.js";
+import couponRoutes from "./routes/coupon.js";
+import reviewRoutes from "./routes/review.js";
+import pinCodeZoneRoutes from "./routes/pinCodeZone.js";
+import offerRoutes from "./routes/offer.js";
+import questionRoutes from "./routes/question.js";
+
 dotenv.config();
 
-// Connect to Database
+// Connect to Database (Prisma connection log)
 connectDB();
 
 const app = express();
@@ -49,14 +56,13 @@ app.use("/api", limiter);
 // 3. CORS Configuration
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://anand-vihar-restaurant.vercel.app", // placeholder deployment URLs
+  "https://anand-vihar-restaurant.vercel.app",
   "https://anand-vihar.vercel.app"
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow requests with no origin (like mobile apps or curl)
       if (!origin) return callback(null, true);
       if (allowedOrigins.indexOf(origin) === -1) {
         const msg = "The CORS policy for this site does not allow access from the specified Origin.";
@@ -67,9 +73,6 @@ app.use(
     credentials: true,
   })
 );
-
-// 4. Data sanitization against NoSQL query injection
-app.use(mongoSanitize());
 
 /* -------------------------------------------------------------------------- */
 /*                                 PARSERS                                    */
@@ -86,19 +89,28 @@ app.use(cookieParser());
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "Anand Vihar Restaurant & Sweet Shop API running successfully.",
+    message: "Anand Vihar Sweet Shop E-Commerce API running successfully.",
   });
 });
 
 app.use("/api/auth", authRoutes);
 app.use("/api/menu", menuRoutes);
-app.use("/api/reservations", reservationRoutes);
 app.use("/api/testimonials", testimonialRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api/gallery", galleryRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/settings", settingRoutes);
+
+// E-commerce API mounts
+app.use("/api/cart", cartRoutes);
+app.use("/api/address", addressRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/coupons", couponRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/pincodes", pinCodeZoneRoutes);
+app.use("/api/offers", offerRoutes);
+app.use("/api/questions", questionRoutes);
 
 /* -------------------------------------------------------------------------- */
 /*                                404 HANDLER                                 */

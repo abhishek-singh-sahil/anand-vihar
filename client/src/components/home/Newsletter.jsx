@@ -62,7 +62,7 @@ function Newsletter() {
             Subscribe to receive festival offers, exclusive discounts,
             new menu launches and exciting updates from
             <span className="font-semibold text-[#ffefb3]">
-              {" "}Anand Vihar Restaurant & Sweet Shop
+              {" "}Anand Vihar Sweet Shop
             </span>.
           </p>
 

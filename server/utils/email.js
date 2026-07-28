@@ -309,3 +309,124 @@ export const sendAdminNotificationEmail = async (subject, textContent) => {
     console.error("Error sending admin notification email:", error);
   }
 };
+
+export const sendOrderConfirmationEmail = async (email, order, items) => {
+  try {
+    const transporter = getTransporter();
+    
+    let itemsHtml = "";
+    items.forEach(item => {
+      itemsHtml += `
+        <tr>
+          <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.name}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${item.quantity}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">₹${item.price}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">₹${item.price * item.quantity}</td>
+        </tr>
+      `;
+    });
+
+    const htmlContent = wrapEmailTemplate(
+      "Order Confirmation - Invoice",
+      `
+        <p>Hello ${order.name},</p>
+        <p>Thank you for placing your order with Anand Vihar. We are preparing your fresh sweets! Below is your invoice summary:</p>
+        
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+          <thead>
+            <tr style="background-color: #FAF5EF;">
+              <th style="padding: 8px; border-bottom: 2px solid #ff9248; text-align: left;">Sweet Item</th>
+              <th style="padding: 8px; border-bottom: 2px solid #ff9248; text-align: center;">Qty</th>
+              <th style="padding: 8px; border-bottom: 2px solid #ff9248; text-align: right;">Unit Price</th>
+              <th style="padding: 8px; border-bottom: 2px solid #ff9248; text-align: right;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHtml}
+          </tbody>
+        </table>
+
+        <div style="text-align: right; line-height: 1.8; margin-top: 15px;">
+          <p><strong>Subtotal:</strong> ₹${order.totalAmount}</p>
+          <p><strong>Shipping/Delivery:</strong> ₹${order.shippingCharge}</p>
+          <p style="font-size: 18px; color: #013e37;"><strong>Grand Total:</strong> ₹${order.grandTotal}</p>
+        </div>
+
+        <div style="background-color: #FAF5EF; padding: 15px; border-radius: 8px; margin-top: 20px;">
+          <h3>Delivery Details:</h3>
+          <p><strong>Name:</strong> ${order.name}</p>
+          <p><strong>Phone:</strong> ${order.phone}</p>
+          <p><strong>Address:</strong> ${order.houseNumber}, ${order.street}, ${order.landmark ? order.landmark + ', ' : ''}${order.city}, ${order.state} - ${order.pinCode}</p>
+          <p><strong>Payment Method:</strong> ${order.paymentMethod}</p>
+          <p><strong>Order Tracking Number:</strong> ${order.orderNumber}</p>
+        </div>
+      `
+    );
+
+    await transporter.sendMail({
+      from: `"${process.env.EMAIL_SENDER_NAME || 'Anand Vihar'}" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: `Anand Vihar Sweet Shop - Order Confirmation #${order.orderNumber}`,
+      html: htmlContent,
+    });
+  } catch (error) {
+    console.error("Error sending order confirmation email:", error);
+  }
+};
+
+export const sendOrderAlertEmail = async (order, items) => {
+  try {
+    const transporter = getTransporter();
+    
+    let itemsHtml = "";
+    items.forEach(item => {
+      itemsHtml += `
+        <tr>
+          <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.name}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${item.quantity}</td>
+        </tr>
+      `;
+    });
+
+    const htmlContent = wrapEmailTemplate(
+      "New Sweet Order Placed!",
+      `
+        <p>Hello Admin,</p>
+        <p>A new order has been placed on the Anand Vihar Sweet Shop platform.</p>
+        
+        <h3>Order Items:</h3>
+        <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+          <thead>
+            <tr style="background-color: #FAF5EF;">
+              <th style="padding: 8px; border-bottom: 2px solid #ff9248; text-align: left;">Sweet Item</th>
+              <th style="padding: 8px; border-bottom: 2px solid #ff9248; text-align: center;">Qty</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHtml}
+          </tbody>
+        </table>
+
+        <div style="background-color: #FAF5EF; padding: 15px; border-radius: 8px; margin-top: 20px;">
+          <h3>Customer details:</h3>
+          <p><strong>Name:</strong> ${order.name}</p>
+          <p><strong>Phone:</strong> ${order.phone}</p>
+          <p><strong>Address:</strong> ${order.houseNumber}, ${order.street}, ${order.city}, ${order.state} - ${order.pinCode}</p>
+          <p><strong>Total Amount:</strong> ₹${order.grandTotal}</p>
+          <p><strong>Payment Method:</strong> ${order.paymentMethod}</p>
+          <p><strong>Notes:</strong> ${order.notes || 'None'}</p>
+        </div>
+      `
+    );
+
+    await transporter.sendMail({
+      from: `"${process.env.EMAIL_SENDER_NAME || 'Anand Vihar Service'}" <${process.env.EMAIL_USER}>`,
+      to: process.env.ADMIN_ALERT_EMAIL || process.env.EMAIL_USER,
+      subject: `[New Order] Anand Vihar Sweet Shop #${order.orderNumber}`,
+      html: htmlContent,
+    });
+  } catch (error) {
+    console.error("Error sending admin order alert email:", error);
+  }
+};
+

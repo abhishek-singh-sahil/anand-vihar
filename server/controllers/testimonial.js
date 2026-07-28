@@ -1,4 +1,4 @@
-import Testimonial from "../models/Testimonial.js";
+import { prisma } from "../config/db.js";
 import { uploadToCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
 
 // Visitor submission (no login required)
@@ -14,10 +14,7 @@ export const submitTestimonial = async (req, res, next) => {
     let videoUrl = "";
 
     if (req.files) {
-      // Handles multiple images and single video
       const files = req.files;
-      
-      // Filter images and videos
       const imageFiles = files.filter(f => f.mimetype.startsWith("image/"));
       const videoFiles = files.filter(f => f.mimetype.startsWith("video/"));
 
@@ -35,18 +32,18 @@ export const submitTestimonial = async (req, res, next) => {
       }
     }
 
-    const testimonial = new Testimonial({
-      name,
-      city,
-      phone,
-      rating: Number(rating),
-      review,
-      images: imageUrls,
-      video: videoUrl,
-      status: "pending", // admin approval required
+    const testimonial = await prisma.testimonial.create({
+      data: {
+        name,
+        city,
+        phone: phone || "",
+        rating: Number(rating),
+        review,
+        images: imageUrls,
+        video: videoUrl,
+        status: "pending", // admin approval required
+      }
     });
-
-    await testimonial.save();
 
     res.status(201).json({
       success: true,
@@ -62,36 +59,37 @@ export const submitTestimonial = async (req, res, next) => {
 export const getApprovedTestimonials = async (req, res, next) => {
   try {
     const { sort, featured } = req.query;
-    let query = { status: "approved" };
+    const query = { status: "approved" };
 
     if (featured === "true") {
       query.isFeatured = true;
     }
 
-    let sortOption = { createdAt: -1 }; // default newest
+    const testimonials = await prisma.testimonial.findMany({
+      where: query
+    });
 
-    if (sort === "oldest") {
-      sortOption = { createdAt: 1 };
-    } else if (sort === "highest") {
-      sortOption = { rating: -1, createdAt: -1 };
-    } else if (sort === "trending") {
-      sortOption = { viewCount: -1, likesCount: -1 }; // sorting by views and likes count
-    }
-
-    // MongoDB aggregation to support sorting by likes array length if sorting by trending
-    let testimonials;
+    // Client-side sort to mirror MongoDB query logic
     if (sort === "trending") {
-      testimonials = await Testimonial.aggregate([
-        { $match: query },
-        {
-          $addFields: {
-            likesCount: { $size: "$likes" },
-          },
-        },
-        { $sort: { isPinned: -1, viewCount: -1, likesCount: -1 } },
-      ]);
+      testimonials.sort((a, b) => {
+        if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+        const scoreA = a.viewCount + (a.likes ? a.likes.length : 0);
+        const scoreB = b.viewCount + (b.likes ? b.likes.length : 0);
+        return scoreB - scoreA;
+      });
     } else {
-      testimonials = await Testimonial.find(query).sort({ isPinned: -1, ...sortOption });
+      testimonials.sort((a, b) => {
+        if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+        if (sort === "oldest") {
+          return new Date(a.createdAt) - new Date(b.createdAt);
+        } else if (sort === "highest") {
+          if (b.rating !== a.rating) return b.rating - a.rating;
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        } else {
+          // default newest
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        }
+      });
     }
 
     res.status(200).json({ success: true, testimonials });
@@ -104,37 +102,45 @@ export const getApprovedTestimonials = async (req, res, next) => {
 export const incrementViewCount = async (req, res, next) => {
   try {
     const { id } = req.params;
-    await Testimonial.findByIdAndUpdate(id, { $inc: { viewCount: 1 } });
+    await prisma.testimonial.update({
+      where: { id },
+      data: { viewCount: { increment: 1 } }
+    });
     res.status(200).json({ success: true });
   } catch (error) {
     next(error);
   }
 };
 
-// Toggle Like (Guest / User)
+// Toggle Like
 export const likeTestimonial = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { identifier } = req.body; // IP address or user ID passed from client
+    const { identifier } = req.body;
     
     if (!identifier) {
       return res.status(400).json({ success: false, message: "Client identifier is required" });
     }
 
-    const testimonial = await Testimonial.findById(id);
+    const testimonial = await prisma.testimonial.findUnique({ where: { id } });
     if (!testimonial) {
       return res.status(404).json({ success: false, message: "Testimonial not found" });
     }
 
-    const index = testimonial.likes.indexOf(identifier);
+    let updatedLikes = [...testimonial.likes];
+    const index = updatedLikes.indexOf(identifier);
     if (index === -1) {
-      testimonial.likes.push(identifier);
+      updatedLikes.push(identifier);
     } else {
-      testimonial.likes.splice(index, 1);
+      updatedLikes.splice(index, 1);
     }
 
-    await testimonial.save();
-    res.status(200).json({ success: true, likes: testimonial.likes });
+    const updatedTestimonial = await prisma.testimonial.update({
+      where: { id },
+      data: { likes: updatedLikes }
+    });
+
+    res.status(200).json({ success: true, likes: updatedTestimonial.likes });
   } catch (error) {
     next(error);
   }
@@ -144,7 +150,7 @@ export const likeTestimonial = async (req, res, next) => {
 export const reactToTestimonial = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { reactionType, identifier } = req.body; // thumbsUp, heart, clap, laugh
+    const { reactionType, identifier } = req.body;
 
     if (!["thumbsUp", "heart", "clap", "laugh"].includes(reactionType)) {
       return res.status(400).json({ success: false, message: "Invalid reaction type" });
@@ -154,34 +160,43 @@ export const reactToTestimonial = async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Client identifier is required" });
     }
 
-    const testimonial = await Testimonial.findById(id);
+    const testimonial = await prisma.testimonial.findUnique({ where: { id } });
     if (!testimonial) {
       return res.status(404).json({ success: false, message: "Testimonial not found" });
     }
 
-    // Toggle reaction
-    if (!testimonial.emojiReactions[reactionType]) {
-      testimonial.emojiReactions[reactionType] = [];
+    let reactions = testimonial.emojiReactions;
+    if (typeof reactions === "string") {
+      reactions = JSON.parse(reactions);
+    }
+    if (!reactions || typeof reactions !== "object") {
+      reactions = { thumbsUp: [], heart: [], clap: [], laugh: [] };
     }
 
-    const index = testimonial.emojiReactions[reactionType].indexOf(identifier);
+    // Toggle reaction
+    if (!reactions[reactionType]) {
+      reactions[reactionType] = [];
+    }
+
+    const index = reactions[reactionType].indexOf(identifier);
     if (index === -1) {
-      // Remove identifier from other reactions to allow only one reaction type per user
+      // Remove identifier from other reactions (single reaction limit per user)
       ["thumbsUp", "heart", "clap", "laugh"].forEach(type => {
-        if (testimonial.emojiReactions[type]) {
-          testimonial.emojiReactions[type] = testimonial.emojiReactions[type].filter(id => id !== identifier);
+        if (reactions[type]) {
+          reactions[type] = reactions[type].filter(item => item !== identifier);
         }
       });
-      testimonial.emojiReactions[reactionType].push(identifier);
+      reactions[reactionType].push(identifier);
     } else {
-      testimonial.emojiReactions[reactionType].splice(index, 1);
+      reactions[reactionType].splice(index, 1);
     }
 
-    // Mark modifications so Mongoose saves nested objects
-    testimonial.markModified("emojiReactions");
-    await testimonial.save();
+    const updated = await prisma.testimonial.update({
+      where: { id },
+      data: { emojiReactions: reactions }
+    });
 
-    res.status(200).json({ success: true, emojiReactions: testimonial.emojiReactions });
+    res.status(200).json({ success: true, emojiReactions: updated.emojiReactions });
   } catch (error) {
     next(error);
   }
@@ -197,15 +212,33 @@ export const addCommentToTestimonial = async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Name and comment text are required" });
     }
 
-    const testimonial = await Testimonial.findById(id);
+    const testimonial = await prisma.testimonial.findUnique({ where: { id } });
     if (!testimonial) {
       return res.status(404).json({ success: false, message: "Testimonial not found" });
     }
 
-    testimonial.comments.push({ name, text });
-    await testimonial.save();
+    let commentsList = testimonial.comments;
+    if (typeof commentsList === "string") {
+      commentsList = JSON.parse(commentsList);
+    }
+    if (!Array.isArray(commentsList)) {
+      commentsList = [];
+    }
 
-    res.status(201).json({ success: true, comments: testimonial.comments });
+    commentsList.push({
+      _id: Math.random().toString(36).substr(2, 9),
+      name,
+      text,
+      createdAt: new Date(),
+      replies: []
+    });
+
+    const updated = await prisma.testimonial.update({
+      where: { id },
+      data: { comments: commentsList }
+    });
+
+    res.status(201).json({ success: true, comments: updated.comments });
   } catch (error) {
     next(error);
   }
@@ -221,20 +254,39 @@ export const addReplyToComment = async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Name and reply text are required" });
     }
 
-    const testimonial = await Testimonial.findById(testimonialId);
+    const testimonial = await prisma.testimonial.findUnique({ where: { id: testimonialId } });
     if (!testimonial) {
       return res.status(404).json({ success: false, message: "Testimonial not found" });
     }
 
-    const comment = testimonial.comments.id(commentId);
-    if (!comment) {
-      return res.status(404).json({ success: false, message: "Comment not found" });
+    let commentsList = testimonial.comments;
+    if (typeof commentsList === "string") {
+      commentsList = JSON.parse(commentsList);
+    }
+    if (!Array.isArray(commentsList)) {
+      commentsList = [];
     }
 
-    comment.replies.push({ name, text });
-    await testimonial.save();
+    commentsList = commentsList.map(c => {
+      if (c._id === commentId) {
+        const replies = Array.isArray(c.replies) ? c.replies : [];
+        replies.push({
+          _id: Math.random().toString(36).substr(2, 9),
+          name,
+          text,
+          createdAt: new Date()
+        });
+        return { ...c, replies };
+      }
+      return c;
+    });
 
-    res.status(201).json({ success: true, comments: testimonial.comments });
+    const updated = await prisma.testimonial.update({
+      where: { id: testimonialId },
+      data: { comments: commentsList }
+    });
+
+    res.status(201).json({ success: true, comments: updated.comments });
   } catch (error) {
     next(error);
   }
@@ -244,21 +296,24 @@ export const addReplyToComment = async (req, res, next) => {
 export const adminGetTestimonials = async (req, res, next) => {
   try {
     const { status, search } = req.query;
-    let query = {};
+    const where = {};
 
     if (status) {
-      query.status = status;
+      where.status = status;
     }
 
     if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { city: { $regex: search, $options: "i" } },
-        { review: { $regex: search, $options: "i" } },
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { city: { contains: search, mode: "insensitive" } },
+        { review: { contains: search, mode: "insensitive" } },
       ];
     }
 
-    const testimonials = await Testimonial.find(query).sort({ createdAt: -1 });
+    const testimonials = await prisma.testimonial.findMany({
+      where,
+      orderBy: { createdAt: "desc" }
+    });
     res.status(200).json({ success: true, testimonials });
   } catch (error) {
     next(error);
@@ -289,19 +344,20 @@ export const adminCreateTestimonial = async (req, res, next) => {
       }
     }
 
-    const testimonial = new Testimonial({
-      name,
-      city,
-      rating: Number(rating),
-      review,
-      images: imageUrls,
-      video: videoUrl,
-      isPinned: isPinned === "true" || isPinned === true,
-      isFeatured: isFeatured === "true" || isFeatured === true,
-      status: "approved", // admin created is pre-approved
+    const testimonial = await prisma.testimonial.create({
+      data: {
+        name,
+        city,
+        rating: Number(rating),
+        review,
+        images: imageUrls,
+        video: videoUrl,
+        isPinned: isPinned === "true" || isPinned === true,
+        isFeatured: isFeatured === "true" || isFeatured === true,
+        status: "approved",
+      }
     });
 
-    await testimonial.save();
     res.status(201).json({ success: true, message: "Testimonial created by admin successfully", testimonial });
   } catch (error) {
     next(error);
@@ -313,18 +369,19 @@ export const adminUpdateTestimonial = async (req, res, next) => {
     const { id } = req.params;
     const { name, city, rating, review, isPinned, isFeatured, status } = req.body;
 
-    const testimonial = await Testimonial.findById(id);
+    const testimonial = await prisma.testimonial.findUnique({ where: { id } });
     if (!testimonial) {
       return res.status(404).json({ success: false, message: "Testimonial not found" });
     }
 
-    if (name) testimonial.name = name;
-    if (city) testimonial.city = city;
-    if (rating) testimonial.rating = Number(rating);
-    if (review) testimonial.review = review;
-    if (status) testimonial.status = status;
-    if (isPinned !== undefined) testimonial.isPinned = isPinned === "true" || isPinned === true;
-    if (isFeatured !== undefined) testimonial.isFeatured = isFeatured === "true" || isFeatured === true;
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (city) updateData.city = city;
+    if (rating) updateData.rating = Number(rating);
+    if (review) updateData.review = review;
+    if (status) updateData.status = status;
+    if (isPinned !== undefined) updateData.isPinned = isPinned === "true" || isPinned === true;
+    if (isFeatured !== undefined) updateData.isFeatured = isFeatured === "true" || isFeatured === true;
 
     if (req.files) {
       const files = req.files;
@@ -332,14 +389,13 @@ export const adminUpdateTestimonial = async (req, res, next) => {
       const videoFiles = files.filter(f => f.mimetype.startsWith("video/"));
 
       if (imageFiles.length > 0) {
-        // Delete old images
         for (const img of testimonial.images) {
           await deleteFromCloudinary(img);
         }
-        testimonial.images = [];
+        updateData.images = [];
         for (const img of imageFiles) {
           const uploadRes = await uploadToCloudinary(img.buffer, "anand_vihar_testimonials", "image");
-          testimonial.images.push(uploadRes.secure_url);
+          updateData.images.push(uploadRes.secure_url);
         }
       }
 
@@ -349,12 +405,16 @@ export const adminUpdateTestimonial = async (req, res, next) => {
         }
         const vid = videoFiles[0];
         const uploadRes = await uploadToCloudinary(vid.buffer, "anand_vihar_testimonials_video", "video");
-        testimonial.video = uploadRes.secure_url;
+        updateData.video = uploadRes.secure_url;
       }
     }
 
-    await testimonial.save();
-    res.status(200).json({ success: true, message: "Testimonial updated successfully", testimonial });
+    const updated = await prisma.testimonial.update({
+      where: { id },
+      data: updateData
+    });
+
+    res.status(200).json({ success: true, message: "Testimonial updated successfully", testimonial: updated });
   } catch (error) {
     next(error);
   }
@@ -363,12 +423,11 @@ export const adminUpdateTestimonial = async (req, res, next) => {
 export const adminDeleteTestimonial = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const testimonial = await Testimonial.findById(id);
+    const testimonial = await prisma.testimonial.findUnique({ where: { id } });
     if (!testimonial) {
       return res.status(404).json({ success: false, message: "Testimonial not found" });
     }
 
-    // Clean up assets from Cloudinary
     for (const img of testimonial.images) {
       await deleteFromCloudinary(img);
     }
@@ -376,7 +435,7 @@ export const adminDeleteTestimonial = async (req, res, next) => {
       await deleteFromCloudinary(testimonial.video);
     }
 
-    await Testimonial.findByIdAndDelete(id);
+    await prisma.testimonial.delete({ where: { id } });
     res.status(200).json({ success: true, message: "Testimonial deleted successfully" });
   } catch (error) {
     next(error);
@@ -390,7 +449,10 @@ export const adminBulkApprove = async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Please provide an array of testimonial IDs" });
     }
 
-    await Testimonial.updateMany({ _id: { $in: ids } }, { $set: { status: "approved" } });
+    await prisma.testimonial.updateMany({
+      where: { id: { in: ids } },
+      data: { status: "approved" }
+    });
     res.status(200).json({ success: true, message: "Testimonials approved in batch successfully" });
   } catch (error) {
     next(error);
@@ -404,7 +466,10 @@ export const adminBulkDelete = async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Please provide an array of testimonial IDs" });
     }
 
-    const testimonials = await Testimonial.find({ _id: { $in: ids } });
+    const testimonials = await prisma.testimonial.findMany({
+      where: { id: { in: ids } }
+    });
+
     for (const testm of testimonials) {
       for (const img of testm.images) {
         await deleteFromCloudinary(img);
@@ -414,7 +479,10 @@ export const adminBulkDelete = async (req, res, next) => {
       }
     }
 
-    await Testimonial.deleteMany({ _id: { $in: ids } });
+    await prisma.testimonial.deleteMany({
+      where: { id: { in: ids } }
+    });
+
     res.status(200).json({ success: true, message: "Testimonials batch deleted successfully" });
   } catch (error) {
     next(error);

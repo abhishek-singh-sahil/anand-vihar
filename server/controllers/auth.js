@@ -1,16 +1,17 @@
-import User from "../models/User.js";
+import { prisma } from "../config/db.js";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 import { sendVerificationEmail, sendWelcomeEmail, sendForgotPasswordEmail, sendPasswordChangedEmail } from "../utils/email.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 
 const generateAccessToken = (user) => {
-  return jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
+  return jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, {
     expiresIn: "15m",
   });
 };
 
 const generateRefreshToken = (user) => {
-  return jwt.sign({ id: user._id }, process.env.JWT_REFRESH_SECRET, {
+  return jwt.sign({ id: user.id }, process.env.JWT_REFRESH_SECRET, {
     expiresIn: "7d",
   });
 };
@@ -19,21 +20,33 @@ const sendTokenResponse = async (user, statusCode, res) => {
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user);
 
-  // Save refresh token to user model (Refresh Token Rotation capability)
-  user.refreshTokens.push(refreshToken);
-  
-  // Keep active tokens capped to max 10 devices
-  if (user.refreshTokens.length > 10) {
-    user.refreshTokens.shift();
-  }
-  await user.save();
+  // Save refresh token to DB
+  await prisma.refreshToken.create({
+    data: {
+      token: refreshToken,
+      userId: user.id,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+    }
+  });
 
-  const isProduction = process.env.NODE_ENV === "production";
-  
+  // Limit capped to max 10 active tokens
+  const tokenCount = await prisma.refreshToken.count({
+    where: { userId: user.id }
+  });
+  if (tokenCount > 10) {
+    const oldestToken = await prisma.refreshToken.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: "asc" }
+    });
+    if (oldestToken) {
+      await prisma.refreshToken.delete({ where: { id: oldestToken.id } });
+    }
+  }
+
   // Cookie Options
   const cookieOptions = {
     httpOnly: true,
-    secure: true, // Always true since browsers enforce it for localhost under chrome sometimes, or fallback to standard in non-ssl
+    secure: true, // always use secure cookies
     sameSite: "none", // Allow cross-origin requests
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   };
@@ -44,7 +57,7 @@ const sendTokenResponse = async (user, statusCode, res) => {
   return res.status(statusCode).json({
     success: true,
     user: {
-      id: user._id,
+      id: user.id,
       name: user.name,
       email: user.email,
       phone: user.phone,
@@ -60,7 +73,7 @@ export const register = async (req, res, next) => {
   try {
     const { name, email, password, phone } = req.body;
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ success: false, message: "Email is already registered" });
     }
@@ -69,16 +82,27 @@ export const register = async (req, res, next) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    const user = new User({
-      name,
-      email,
-      password,
-      phone,
-      verificationOtp: otp,
-      verificationOtpExpires: otpExpires,
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: passwordHash,
+        phone: phone || "",
+        isVerified: false
+      }
     });
 
-    await user.save();
+    await prisma.otpToken.create({
+      data: {
+        email,
+        otp,
+        expiresAt: otpExpires
+      }
+    });
+
     await sendVerificationEmail(email, name, otp);
 
     res.status(201).json({
@@ -95,7 +119,7 @@ export const verifyOtp = async (req, res, next) => {
   try {
     const { email, otp } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
@@ -104,22 +128,27 @@ export const verifyOtp = async (req, res, next) => {
       return res.status(400).json({ success: false, message: "User is already verified" });
     }
 
-    if (
-      !user.verificationOtp ||
-      user.verificationOtp !== otp ||
-      new Date() > user.verificationOtpExpires
-    ) {
+    // Verify OTP Token
+    const otpRecord = await prisma.otpToken.findFirst({
+      where: { email, otp },
+      orderBy: { createdAt: "desc" }
+    });
+
+    if (!otpRecord || new Date() > otpRecord.expiresAt) {
       return res.status(400).json({ success: false, message: "Invalid or expired OTP code" });
     }
 
-    user.isVerified = true;
-    user.verificationOtp = null;
-    user.verificationOtpExpires = null;
-    await user.save();
+    // Delete OTP records for user
+    await prisma.otpToken.deleteMany({ where: { email } });
 
-    await sendWelcomeEmail(user.email, user.name);
+    const updatedUser = await prisma.user.update({
+      where: { email },
+      data: { isVerified: true }
+    });
 
-    return sendTokenResponse(user, 200, res);
+    await sendWelcomeEmail(updatedUser.email, updatedUser.name);
+
+    return sendTokenResponse(updatedUser, 200, res);
   } catch (error) {
     next(error);
   }
@@ -127,18 +156,18 @@ export const verifyOtp = async (req, res, next) => {
 
 export const login = async (req, res, next) => {
   try {
-    const { email, password, rememberMe } = req.body;
+    const { email, password } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ success: false, message: "Please provide email and password" });
     }
 
-    const user = await User.findOne({ email });
+    const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 
-    const isMatch = await user.matchPassword(password);
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
@@ -146,9 +175,14 @@ export const login = async (req, res, next) => {
     if (!user.isVerified) {
       // Send new OTP
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      user.verificationOtp = otp;
-      user.verificationOtpExpires = new Date(Date.now() + 10 * 60 * 1000);
-      await user.save();
+      await prisma.otpToken.deleteMany({ where: { email } });
+      await prisma.otpToken.create({
+        data: {
+          email,
+          otp,
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000)
+        }
+      });
       await sendVerificationEmail(user.email, user.name, otp);
 
       return res.status(403).json({
@@ -171,10 +205,7 @@ export const logout = async (req, res, next) => {
     
     if (refreshToken) {
       // Remove refresh token from db
-      await User.updateOne(
-        { refreshTokens: refreshToken },
-        { $pull: { refreshTokens: refreshToken } }
-      );
+      await prisma.refreshToken.deleteMany({ where: { token: refreshToken } });
     }
 
     res.clearCookie("accessToken", { httpOnly: true, secure: true, sameSite: "none" });
@@ -198,26 +229,33 @@ export const refresh = async (req, res, next) => {
 
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
-    const user = await User.findById(decoded.id);
-
-    if (!user || !user.refreshTokens.includes(token)) {
-      // Reuse detection: If token is not in db but user exists, clear all tokens
-      if (user) {
-        user.refreshTokens = [];
-        await user.save();
-      }
+    
+    const dbToken = await prisma.refreshToken.findUnique({ where: { token } });
+    if (!dbToken) {
+      // Reuse detection: clear all user tokens if token is reused
+      await prisma.refreshToken.deleteMany({ where: { userId: decoded.id } });
       return res.status(403).json({ success: false, message: "Refresh token reused or invalidated." });
     }
 
+    const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+    if (!user) {
+      return res.status(403).json({ success: false, message: "User not found" });
+    }
+
     // Rotate token: remove old one
-    user.refreshTokens = user.refreshTokens.filter(t => t !== token);
+    await prisma.refreshToken.delete({ where: { id: dbToken.id } });
     
     // Generate new ones
     const newAccessToken = generateAccessToken(user);
     const newRefreshToken = generateRefreshToken(user);
 
-    user.refreshTokens.push(newRefreshToken);
-    await user.save();
+    await prisma.refreshToken.create({
+      data: {
+        token: newRefreshToken,
+        userId: user.id,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      }
+    });
 
     const cookieOptions = {
       httpOnly: true,
@@ -241,15 +279,20 @@ export const refresh = async (req, res, next) => {
 export const forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
-    const user = await User.findOne({ email });
+    const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return res.status(404).json({ success: false, message: "No account found with this email" });
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    user.resetPasswordOtp = otp;
-    user.resetPasswordOtpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-    await user.save();
+    await prisma.otpToken.deleteMany({ where: { email } });
+    await prisma.otpToken.create({
+      data: {
+        email,
+        otp,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10 mins
+      }
+    });
 
     await sendForgotPasswordEmail(user.email, user.name, otp);
 
@@ -263,24 +306,32 @@ export const resetPassword = async (req, res, next) => {
   try {
     const { email, otp, newPassword } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    if (
-      !user.resetPasswordOtp ||
-      user.resetPasswordOtp !== otp ||
-      new Date() > user.resetPasswordOtpExpires
-    ) {
+    const otpRecord = await prisma.otpToken.findFirst({
+      where: { email, otp },
+      orderBy: { createdAt: "desc" }
+    });
+
+    if (!otpRecord || new Date() > otpRecord.expiresAt) {
       return res.status(400).json({ success: false, message: "Invalid or expired OTP code" });
     }
 
-    user.password = newPassword; // Hashed automatically in pre-save hook
-    user.resetPasswordOtp = null;
-    user.resetPasswordOtpExpires = null;
-    user.refreshTokens = []; // Log out all active sessions for security
-    await user.save();
+    // Delete OTP
+    await prisma.otpToken.deleteMany({ where: { email } });
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+
+    await prisma.user.update({
+      where: { email },
+      data: { password: passwordHash }
+    });
+
+    await prisma.refreshToken.deleteMany({ where: { userId: user.id } }); // Clear active sessions
 
     await sendPasswordChangedEmail(user.email, user.name);
 
@@ -294,14 +345,19 @@ export const changePassword = async (req, res, next) => {
   try {
     const { currentPassword, newPassword } = req.body;
     
-    const user = await User.findById(req.user.id);
-    const isMatch = await user.matchPassword(currentPassword);
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
       return res.status(400).json({ success: false, message: "Current password is incorrect" });
     }
 
-    user.password = newPassword;
-    await user.save();
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { password: passwordHash }
+    });
 
     await sendPasswordChangedEmail(user.email, user.name);
 
@@ -321,22 +377,27 @@ export const getProfile = async (req, res) => {
 export const updateProfile = async (req, res, next) => {
   try {
     const { name, phone } = req.body;
-    const user = await User.findById(req.user.id);
+    const updateData = {};
 
-    if (name) user.name = name;
-    if (phone !== undefined) user.phone = phone;
+    if (name) updateData.name = name;
+    if (phone !== undefined) updateData.phone = phone;
 
     if (req.file) {
       const uploadResult = await uploadToCloudinary(req.file.buffer, "anand_vihar_profiles", "image");
-      user.profilePic = uploadResult.secure_url;
+      updateData.profilePic = uploadResult.secure_url;
     }
 
-    await user.save();
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: updateData
+    });
+
+    delete updatedUser.password;
 
     res.status(200).json({
       success: true,
       message: "Profile updated successfully",
-      user,
+      user: updatedUser,
     });
   } catch (error) {
     next(error);

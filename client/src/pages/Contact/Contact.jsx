@@ -48,7 +48,7 @@ function Contact() {
         <span className="badge mb-4">✦ Contact Us ✦</span>
         <h1 className="text-4xl sm:text-5xl font-extrabold text-[#013e37]">Get In Touch</h1>
         <p className="text-gray-500 max-w-xl mx-auto mt-4">
-          Have questions about our sweet varieties, catering menus, or reservations? Send us a message or call directly.
+          Have questions about our sweet varieties, catering menus, or special events? Send us a message or call directly.
         </p>
       </div>
 
