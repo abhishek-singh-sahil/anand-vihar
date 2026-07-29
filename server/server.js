@@ -25,6 +25,7 @@ import reviewRoutes from "./routes/review.js";
 import pinCodeZoneRoutes from "./routes/pinCodeZone.js";
 import offerRoutes from "./routes/offer.js";
 import questionRoutes from "./routes/question.js";
+import bannerRoutes from "./routes/banner.js";
 
 dotenv.config();
 
@@ -57,7 +58,9 @@ app.use("/api", limiter);
 const allowedOrigins = [
   "http://localhost:5173",
   "https://anand-vihar-restaurant.vercel.app",
-  "https://anand-vihar.vercel.app"
+  "https://anand-vihar.vercel.app",
+  "https://anand-vihar.com",
+  "https://www.anand-vihar.com"
 ];
 
 app.use(
@@ -108,6 +111,7 @@ app.use("/api/address", addressRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/coupons", couponRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/banners", bannerRoutes);
 app.use("/api/pincodes", pinCodeZoneRoutes);
 app.use("/api/offers", offerRoutes);
 app.use("/api/questions", questionRoutes);
