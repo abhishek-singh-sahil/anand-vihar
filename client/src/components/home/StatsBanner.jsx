@@ -31,39 +31,39 @@ const stats = [
 
 function StatsBanner() {
   return (
-    <section className="py-6 px-4 bg-[#FDFCFA] font-sans">
+    <section className="py-4 px-4 bg-[#FDFCFA] font-sans">
       <div className="max-w-[1440px] mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="bg-white rounded-3xl border border-gray-100 shadow-xl p-6 sm:p-8 md:p-10 grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-4 divide-y md:divide-y-0 md:divide-x divide-gray-100"
+          className="bg-white rounded-2xl border border-gray-100 shadow-md p-4 sm:p-5 md:p-6 grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-2 divide-y md:divide-y-0 md:divide-x divide-gray-100"
         >
           {stats.map((stat, idx) => {
             const Icon = stat.icon;
             return (
               <div 
                 key={idx} 
-                className={`flex items-center gap-5 pb-6 md:pb-0 pt-6 md:pt-0 ${
+                className={`flex items-center gap-4 pb-4 md:pb-0 pt-4 md:pt-0 ${
                   idx === 0 ? "pt-0" : ""
                 } ${
                   idx === stats.length - 1 ? "pb-0" : ""
-                } md:px-6 lg:px-8`}
+                } md:px-4 lg:px-6`}
               >
                 {/* Icon Container */}
-                <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${stat.iconBg}`}>
-                  <Icon className={`w-7 h-7 ${stat.iconColor}`} />
+                <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${stat.iconBg}`}>
+                  <Icon className={`w-5.5 h-5.5 ${stat.iconColor}`} size={20} />
                 </div>
                 {/* Content */}
                 <div>
-                  <h3 className="text-2xl sm:text-3xl font-extrabold text-[#013e37] leading-none">
+                  <h3 className="text-xl sm:text-2xl font-extrabold text-[#013e37] leading-none">
                     {stat.value}
                   </h3>
-                  <h4 className="text-sm sm:text-base font-bold text-gray-800 mt-1.5 leading-tight">
+                  <h4 className="text-xs sm:text-sm font-bold text-gray-800 mt-1 leading-tight">
                     {stat.title}
                   </h4>
-                  <p className="text-xs text-gray-500 font-semibold mt-1">
+                  <p className="text-[10px] sm:text-[11px] text-gray-500 font-semibold mt-0.5">
                     {stat.subtitle}
                   </p>
                 </div>

@@ -73,31 +73,32 @@ function Hero() {
   const activeSlide = slides[current];
 
   return (
-    <section className="w-full relative overflow-hidden bg-white">
-      <div 
-        onClick={() => activeSlide?.link && navigate(activeSlide.link)}
-        className={`w-full relative aspect-[21/9] min-h-[200px] sm:min-h-[300px] md:min-h-[400px] lg:min-h-[480px] bg-gray-50 select-none overflow-hidden ${
-          activeSlide?.link ? "cursor-pointer" : ""
-        }`}
-      >
-        <AnimatePresence initial={false} mode="popLayout">
-          <motion.div
-            key={activeSlide.id || activeSlide._id || current}
-            initial={{ opacity: 0, x: "-100%" }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: "100%" }}
-            transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1.0] }}
-            className="absolute inset-0 w-full h-full"
-          >
-            {/* Banner Image */}
-            <img
-              src={activeSlide.image}
-              alt={activeSlide.title || "Banner"}
-              className="w-full h-full object-cover"
-              draggable="false"
-            />
-          </motion.div>
-        </AnimatePresence>
+    <section className="w-full bg-[#FDFCFA] py-3 sm:py-6 px-4 sm:px-8 lg:px-12 font-sans">
+      <div className="max-w-[1440px] mx-auto">
+        <div 
+          onClick={() => activeSlide?.link && navigate(activeSlide.link)}
+          className={`w-full relative aspect-[16/7.5] md:aspect-[2.6/1] bg-gray-50 select-none overflow-hidden rounded-2xl md:rounded-3xl shadow-sm ${
+            activeSlide?.link ? "cursor-pointer" : ""
+          }`}
+        >
+          <AnimatePresence initial={false} mode="popLayout">
+            <motion.div
+              key={activeSlide.id || activeSlide._id || current}
+              initial={{ opacity: 0, x: "-100%" }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: "100%" }}
+              transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1.0] }}
+              className="absolute inset-0 w-full h-full"
+            >
+              {/* Banner Image */}
+              <img
+                src={activeSlide.image}
+                alt={activeSlide.title || "Banner"}
+                className="w-full h-full object-cover md:object-cover"
+                draggable="false"
+              />
+            </motion.div>
+          </AnimatePresence>
 
         {/* Carousel Arrow Controls */}
         {slides.length > 1 && (
@@ -135,6 +136,7 @@ function Hero() {
             </div>
           </>
         )}
+      </div>
       </div>
     </section>
   );
