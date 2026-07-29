@@ -45,6 +45,7 @@ import GalleryAdmin from "../pages/admin/Gallery/Gallery";
 import Settings from "../pages/admin/Settings/Settings";
 import PinCodes from "../pages/admin/PinCodes/PinCodes";
 import Coupons from "../pages/admin/Coupons/Coupons";
+import HomepageCMS from "../pages/admin/HomepageCMS/HomepageCMS";
 
 // Protect route wrapper
 const ProtectedRoute = ({ children, adminOnly = false }) => {
@@ -143,6 +144,7 @@ function AppRoutes() {
         <Route path="settings" element={<Settings />} />
         <Route path="pincodes" element={<PinCodes />} />
         <Route path="coupons" element={<Coupons />} />
+        <Route path="homepage-cms" element={<HomepageCMS />} />
       </Route>
 
       {/* ================= 404 ================= */}

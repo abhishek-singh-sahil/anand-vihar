@@ -20,8 +20,7 @@ const images = [
 
 function GalleryPreview() {
   return (
-    <section className="py-24 bg-[var(--bg-main)]">
-
+    <section className="py-12 bg-[var(--bg-main)]">
       <div className="section">
 
         {/* Heading */}
@@ -56,7 +55,7 @@ function GalleryPreview() {
 
         {/* Gallery Grid */}
 
-        <div className="mt-16 grid grid-cols-2 gap-5 lg:grid-cols-4 lg:grid-rows-2">
+        <div className="mt-10 grid grid-cols-2 gap-5 lg:grid-cols-4 lg:grid-rows-2">
 
           {images.map((image, index) => (
 
@@ -95,7 +94,7 @@ function GalleryPreview() {
 
         {/* CTA */}
 
-        <div className="mt-16 text-center">
+        <div className="mt-10 text-center">
 
           <Link
             to="/gallery"

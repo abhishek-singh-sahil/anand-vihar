@@ -39,7 +39,7 @@ const stats = [
 
 function Stats() {
   return (
-    <section className="py-24 relative overflow-hidden">
+    <section className="py-12 relative overflow-hidden">
 
       {/* Background */}
 
@@ -75,7 +75,7 @@ function Stats() {
 
         {/* Cards */}
 
-        <div className="mt-16 grid gap-8 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-10 grid gap-8 sm:grid-cols-2 xl:grid-cols-4">
 
           {stats.map((item, index) => {
 

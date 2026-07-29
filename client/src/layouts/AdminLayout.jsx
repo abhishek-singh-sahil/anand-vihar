@@ -17,6 +17,7 @@ import {
   FaTimes,
   FaMapMarkerAlt,
   FaTicketAlt,
+  FaHome,
 } from "react-icons/fa";
 
 function AdminLayout() {
@@ -27,6 +28,7 @@ function AdminLayout() {
 
   const menuItems = [
     { name: "Dashboard", path: "/admin/dashboard", icon: <FaChartBar /> },
+    { name: "Homepage CMS", path: "/admin/homepage-cms", icon: <FaHome /> },
     { name: "Menu Items", path: "/admin/products", icon: <FaUtensils /> },
     { name: "Categories", path: "/admin/categories", icon: <FaTags /> },
     { name: "Delivery Zones", path: "/admin/pincodes", icon: <FaMapMarkerAlt /> },

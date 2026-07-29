@@ -34,8 +34,7 @@ const testimonials = [
 
 function Testimonials() {
   return (
-    <section className="py-24 bg-[var(--bg-section)]">
-
+    <section className="py-12 bg-[var(--bg-section)]">
       <div className="section">
 
         {/* Heading */}
@@ -70,7 +69,7 @@ function Testimonials() {
 
         {/* Cards */}
 
-        <div className="mt-16 grid gap-8 lg:grid-cols-3">
+        <div className="mt-10 grid gap-8 lg:grid-cols-3">
 
           {testimonials.map((item, index) => (
 

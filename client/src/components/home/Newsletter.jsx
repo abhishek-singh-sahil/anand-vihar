@@ -29,7 +29,7 @@ function Newsletter() {
   };
 
   return (
-    <section className="py-24 bg-[var(--bg-main)] font-sans">
+    <section className="py-12 bg-[var(--bg-main)] font-sans">
       <div className="section">
         <motion.div
           initial={{ opacity: 0, y: 40 }}

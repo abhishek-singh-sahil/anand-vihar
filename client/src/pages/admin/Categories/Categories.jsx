@@ -18,6 +18,8 @@ function Categories() {
     metaDescription: "",
     slug: ""
   });
+  const [categoryImage, setCategoryImage] = useState(null);
+  const [editCategoryImage, setEditCategoryImage] = useState(null);
 
   const fetchCategories = async () => {
     setLoading(true);
@@ -37,10 +39,28 @@ function Categories() {
     e.preventDefault();
     if (!form.name.trim()) return;
     try {
-      const res = await api.post("/menu/categories", form);
+      const formData = new FormData();
+      formData.append("name", form.name);
+      formData.append("description", form.description);
+      formData.append("displayOrder", form.displayOrder);
+      formData.append("isFeatured", form.isFeatured);
+      formData.append("status", form.status);
+      formData.append("metaTitle", form.metaTitle);
+      formData.append("metaDescription", form.metaDescription);
+      formData.append("slug", form.slug);
+      if (categoryImage) {
+        formData.append("image", categoryImage);
+      }
+
+      const res = await api.post("/menu/categories", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
       if (res.data.success) {
         toast.success("Category created!");
         setForm({ name: "", description: "", displayOrder: 0, isFeatured: false, status: true, metaTitle: "", metaDescription: "", slug: "" });
+        setCategoryImage(null);
+        // Reset file input
+        document.getElementById("categoryImageInput").value = "";
         fetchCategories();
       }
     } catch (err) {
@@ -64,10 +84,26 @@ function Categories() {
 
   const saveEdit = async () => {
     try {
-      const res = await api.put(`/menu/categories/${editingId}`, editForm);
+      const formData = new FormData();
+      formData.append("name", editForm.name);
+      formData.append("description", editForm.description);
+      formData.append("displayOrder", editForm.displayOrder);
+      formData.append("isFeatured", editForm.isFeatured);
+      formData.append("status", editForm.status);
+      formData.append("metaTitle", editForm.metaTitle);
+      formData.append("metaDescription", editForm.metaDescription);
+      formData.append("slug", editForm.slug);
+      if (editCategoryImage) {
+        formData.append("image", editCategoryImage);
+      }
+
+      const res = await api.put(`/menu/categories/${editingId}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
       if (res.data.success) {
         toast.success("Category updated!");
         setEditingId(null);
+        setEditCategoryImage(null);
         fetchCategories();
       }
     } catch (err) {
@@ -184,6 +220,16 @@ function Categories() {
                 className={inputClass}
               />
             </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Category Image</label>
+              <input
+                id="categoryImageInput"
+                type="file"
+                accept="image/*"
+                onChange={(e) => setCategoryImage(e.target.files[0])}
+                className="w-full text-xs text-gray-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-[#ff9248] hover:file:bg-orange-100"
+              />
+            </div>
             <div className="flex flex-wrap gap-4">
               <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer">
                 <input
@@ -253,6 +299,15 @@ function Categories() {
                           <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Meta Description</label>
                           <textarea rows={2} value={editForm.metaDescription} onChange={(e) => setEditForm({ ...editForm, metaDescription: e.target.value })} className={inputClass} />
                         </div>
+                        <div>
+                          <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Replace Image</label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setEditCategoryImage(e.target.files[0])}
+                            className="w-full text-xs text-gray-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-[#ff9248] hover:file:bg-orange-100"
+                          />
+                        </div>
                         <div className="flex flex-wrap gap-4">
                           <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer">
                             <input type="checkbox" checked={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.checked })} className="accent-[#ff9248]" />
@@ -270,16 +325,23 @@ function Categories() {
                       </div>
                     ) : (
                       <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-gray-800 text-base">{cat.name}</span>
-                            {cat.isFeatured && <span className="bg-yellow-100 text-yellow-700 text-[10px] font-bold px-2 py-0.5 rounded-full">⭐ Featured</span>}
-                            {!cat.status && <span className="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full">Hidden</span>}
-                          </div>
-                          <div className="flex flex-wrap gap-3 mt-1 text-xs text-gray-400">
-                            {cat.slug && <span>/{cat.slug}</span>}
-                            <span>Order: {cat.displayOrder}</span>
-                            <span>{cat._count?.products ?? 0} items</span>
+                        <div className="flex items-center gap-3">
+                          {cat.image ? (
+                            <img src={cat.image} alt={cat.name} className="w-12 h-12 rounded-xl object-cover border border-gray-100 shadow-sm shrink-0" />
+                          ) : (
+                            <div className="w-12 h-12 rounded-xl bg-orange-50 text-[#ff9248] flex items-center justify-center font-bold text-xs shrink-0">No Img</div>
+                          )}
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-gray-800 text-base">{cat.name}</span>
+                              {cat.isFeatured && <span className="bg-yellow-100 text-yellow-700 text-[10px] font-bold px-2 py-0.5 rounded-full">⭐ Featured</span>}
+                              {!cat.status && <span className="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full">Hidden</span>}
+                            </div>
+                            <div className="flex flex-wrap gap-3 mt-1 text-xs text-gray-400 font-semibold">
+                              {cat.slug && <span>/{cat.slug}</span>}
+                              <span>Order: {cat.displayOrder}</span>
+                              <span>{cat._count?.products ?? 0} items</span>
+                            </div>
                           </div>
                         </div>
                         <div className="flex flex-wrap gap-2">

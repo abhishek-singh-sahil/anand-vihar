@@ -1,135 +1,128 @@
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth";
-import {
-  Candy,
-  Pizza,
-  Coffee,
-  IceCreamCone,
-  Soup,
-  Sandwich,
-} from "lucide-react";
-
-const categories = [
-  {
-    title: "Traditional Sweets",
-    icon: Candy,
-    color: "#ff9248",
-    description: "Freshly prepared traditional Indian sweets.",
-  },
-  {
-    title: "Fast Food",
-    icon: Pizza,
-    color: "#013e37",
-    description: "Delicious burgers, pizzas and more.",
-  },
-  {
-    title: "Beverages",
-    icon: Coffee,
-    color: "#9a0002",
-    description: "Tea, coffee, shakes and cold drinks.",
-  },
-  {
-    title: "Ice Cream",
-    icon: IceCreamCone,
-    color: "#ff9248",
-    description: "Premium ice cream and desserts.",
-  },
-  {
-    title: "Main Course",
-    icon: Soup,
-    color: "#013e37",
-    description: "Complete lunch & dinner meals.",
-  },
-  {
-    title: "Snacks",
-    icon: Sandwich,
-    color: "#9a0002",
-    description: "Fresh snacks for every moment.",
-  },
-];
+import { useNavigate } from "react-router-dom";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import api from "../../services/api";
 
 function Categories() {
-  const { settings } = useAuth();
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const scrollRef = useRef(null);
+  const navigate = useNavigate();
 
-  const displayedCategories = categories.filter(
-    (c) =>
-      c.title === "Traditional Sweets" ||
-      c.title === "Beverages" ||
-      c.title === "Ice Cream"
-  );
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await api.get("/menu/categories");
+        if (res.data?.success) {
+          // Filter active categories
+          const activeCats = (res.data.categories || []).filter(c => c.status !== false);
+          setCategories(activeCats);
+        }
+      } catch (err) {
+        console.error("Failed to load categories:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  const scrollLeft = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: -220, behavior: "smooth" });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: 220, behavior: "smooth" });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="py-12 bg-white flex items-center justify-center font-sans">
+        <div className="text-gray-400 font-semibold animate-pulse">Loading categories...</div>
+      </div>
+    );
+  }
+
+  if (categories.length === 0) return null;
 
   return (
-    <section className="py-24 bg-[var(--bg-main)] font-sans">
-      <div className="section">
-        {/* Heading */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-          className="text-center max-w-3xl mx-auto"
+    <section className="py-12 bg-[#FDFCFA] font-sans">
+      <div className="section relative">
+        {/* Header section with inline navigation arrows */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <div>
+            <span className="inline-block bg-[#ffefb3] text-[#013e37] px-4 py-1.5 rounded-full font-bold text-xs uppercase tracking-wider">
+              Explore Collections
+            </span>
+            <h2 className="mt-2 text-2xl sm:text-3xl font-extrabold text-[#013e37]">
+              Browse By Category
+            </h2>
+          </div>
+
+          {/* Navigation Controls */}
+          {categories.length > 4 && (
+            <div className="flex gap-2">
+              <button
+                onClick={scrollLeft}
+                className="w-10 h-10 rounded-full border border-gray-200 bg-white hover:bg-orange-50 hover:text-[#ff9248] text-[#013e37] flex items-center justify-center cursor-pointer transition shadow-sm"
+                aria-label="Scroll Left"
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <button
+                onClick={scrollRight}
+                className="w-10 h-10 rounded-full border border-gray-200 bg-white hover:bg-orange-50 hover:text-[#ff9248] text-[#013e37] flex items-center justify-center cursor-pointer transition shadow-sm"
+                aria-label="Scroll Right"
+              >
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Categories Carousel Slider */}
+        <div
+          ref={scrollRef}
+          className="flex gap-6 overflow-x-auto scrollbar-none py-2 px-1 snap-x scroll-smooth"
         >
-          <span className="inline-block bg-[#ffefb3] text-[#013e37] px-5 py-2 rounded-full font-semibold">
-            Our Categories
-          </span>
-
-          <h2 className="mt-6 text-4xl lg:text-5xl font-bold text-[#013e37]">
-            Explore Our Delicious Collection
-          </h2>
-
-          <p className="mt-6 text-slate-600 leading-8">
-            Whether you're craving authentic Indian sweets, refreshing beverages, or premium ice creams, Anand Vihar has something for everyone.
-          </p>
-        </motion.div>
-
-        {/* Cards */}
-        <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {displayedCategories.map((item, index) => {
-            const Icon = item.icon;
+          {categories.map((cat, index) => {
+            const catId = cat.id || cat._id;
             return (
               <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{
-                  duration: 0.5,
-                  delay: index * 0.08,
-                }}
+                key={catId}
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
-                whileHover={{
-                  y: -10,
-                }}
-                className="group rounded-3xl bg-[var(--bg-card)] p-8 shadow-premium border border-transparent hover:border-[#ff9248]/30 transition-all duration-300 flex flex-col justify-between"
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+                whileHover={{ y: -6, scale: 1.02 }}
+                onClick={() => navigate(`/menu?category=${encodeURIComponent(cat.name)}`)}
+                className="w-48 sm:w-56 bg-white border border-gray-100 rounded-3xl p-5 shadow-sm hover:shadow-md transition duration-300 text-center shrink-0 cursor-pointer snap-start flex flex-col items-center select-none"
               >
-                <div>
-                  <div
-                    className="w-20 h-20 rounded-2xl flex items-center justify-center"
-                    style={{
-                      backgroundColor: item.color,
-                    }}
-                  >
-                    <Icon
-                      size={40}
-                      color="white"
+                {/* Category Image Box */}
+                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-orange-50/50 flex items-center justify-center mb-4 border border-gray-50">
+                  {cat.image ? (
+                    <img
+                      src={cat.image}
+                      alt={cat.name}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
                     />
-                  </div>
-
-                  <h3 className="mt-8 text-2xl font-bold text-[#013e37] group-hover:text-[#ff9248] transition">
-                    {item.title}
-                  </h3>
-
-                  <p className="mt-4 leading-7 text-slate-600">
-                    {item.description}
-                  </p>
+                  ) : (
+                    <span className="text-[36px] text-[#ff9248] font-bold">
+                      {cat.name.charAt(0)}
+                    </span>
+                  )}
                 </div>
 
-                <Link
-                  to="/menu"
-                  className="mt-8 inline-block text-[#ff9248] font-semibold hover:text-[#ea5a00] transition cursor-pointer text-left"
-                >
-                  View Menu →
-                </Link>
+                {/* Name */}
+                <h3 className="font-bold text-gray-800 text-sm sm:text-base line-clamp-1 group-hover:text-[#ff9248]">
+                  {cat.name}
+                </h3>
               </motion.div>
             );
           })}

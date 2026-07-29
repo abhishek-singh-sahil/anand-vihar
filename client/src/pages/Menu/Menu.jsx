@@ -5,12 +5,13 @@ import api from "../../services/api";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../../hooks/useAuth";
 import { useCart } from "../../context/CartContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 function Menu() {
   const { settings, isAuthenticated } = useAuth();
   const { addToCart } = useCart();
   const navigate = useNavigate();
+  const location = useLocation();
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState(["All"]);
   const [loading, setLoading] = useState(true);
@@ -63,6 +64,14 @@ function Menu() {
   useEffect(() => {
     fetchCategories();
   }, [settings]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const cat = params.get("category");
+    if (cat) {
+      setActiveCategory(cat);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     fetchMenuItems();
