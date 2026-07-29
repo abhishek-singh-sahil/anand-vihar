@@ -54,32 +54,32 @@ function Categories() {
     <section className="py-12 bg-[#FDFCFA] font-sans">
       <div className="section relative">
         {/* Header section with inline navigation arrows */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div className="flex justify-between items-end gap-3 mb-6">
           <div>
             <span className="inline-block bg-[#ffefb3] text-[#013e37] px-4 py-1.5 rounded-full font-bold text-xs uppercase tracking-wider">
               Explore Collections
             </span>
-            <h2 className="mt-2 text-2xl sm:text-3xl font-extrabold text-[#013e37]">
+            <h2 className="mt-2 text-xl sm:text-3xl font-extrabold text-[#013e37] leading-tight">
               Browse By Category
             </h2>
           </div>
 
           {/* Navigation Controls */}
           {categories.length > 4 && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 shrink-0 mb-1">
               <button
                 onClick={scrollLeft}
-                className="w-10 h-10 rounded-full border border-gray-200 bg-white hover:bg-orange-50 hover:text-[#ff9248] text-[#013e37] flex items-center justify-center cursor-pointer transition shadow-sm"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-gray-200 bg-white hover:bg-orange-50 hover:text-[#ff9248] text-[#013e37] flex items-center justify-center cursor-pointer transition shadow-sm"
                 aria-label="Scroll Left"
               >
-                <ChevronLeft size={20} />
+                <ChevronLeft size={18} className="sm:w-5 sm:h-5" />
               </button>
               <button
                 onClick={scrollRight}
-                className="w-10 h-10 rounded-full border border-gray-200 bg-white hover:bg-orange-50 hover:text-[#ff9248] text-[#013e37] flex items-center justify-center cursor-pointer transition shadow-sm"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-gray-200 bg-white hover:bg-orange-50 hover:text-[#ff9248] text-[#013e37] flex items-center justify-center cursor-pointer transition shadow-sm"
                 aria-label="Scroll Right"
               >
-                <ChevronRight size={20} />
+                <ChevronRight size={18} className="sm:w-5 sm:h-5" />
               </button>
             </div>
           )}

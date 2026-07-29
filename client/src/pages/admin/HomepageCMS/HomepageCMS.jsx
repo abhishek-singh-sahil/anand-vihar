@@ -11,6 +11,7 @@ function HomepageCMS() {
     title: "",
     description: "",
     link: "",
+    device: "desktop",
     displayOrder: 0,
     active: true
   });
@@ -20,6 +21,7 @@ function HomepageCMS() {
     title: "",
     description: "",
     link: "",
+    device: "desktop",
     displayOrder: 0,
     active: true
   });
@@ -54,6 +56,7 @@ function HomepageCMS() {
     formData.append("title", form.title);
     formData.append("description", form.description);
     formData.append("link", form.link);
+    formData.append("device", form.device);
     formData.append("displayOrder", form.displayOrder);
     formData.append("active", form.active);
     formData.append("image", bannerImage);
@@ -64,7 +67,7 @@ function HomepageCMS() {
       });
       if (res.data.success) {
         toast.success("Banner added successfully!");
-        setForm({ title: "", description: "", link: "", displayOrder: 0, active: true });
+        setForm({ title: "", description: "", link: "", device: "desktop", displayOrder: 0, active: true });
         setBannerImage(null);
         document.getElementById("bannerImageInput").value = "";
         fetchBanners();
@@ -80,6 +83,7 @@ function HomepageCMS() {
       title: b.title || "",
       description: b.description || "",
       link: b.link || "",
+      device: b.device || "desktop",
       displayOrder: b.displayOrder || 0,
       active: b.active
     });
@@ -92,6 +96,7 @@ function HomepageCMS() {
     formData.append("title", editForm.title);
     formData.append("description", editForm.description);
     formData.append("link", editForm.link);
+    formData.append("device", editForm.device);
     formData.append("displayOrder", editForm.displayOrder);
     formData.append("active", editForm.active);
     if (editBannerImage) {
@@ -211,6 +216,17 @@ function HomepageCMS() {
                 </div>
               </div>
               <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Target Device</label>
+                <select
+                  value={editForm.device}
+                  onChange={(e) => setEditForm({ ...editForm, device: e.target.value })}
+                  className={inputClass}
+                >
+                  <option value="desktop">💻 Laptop/Desktop Banners</option>
+                  <option value="mobile">📱 Phone/Mobile Banners</option>
+                </select>
+              </div>
+              <div>
                 <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Replace Slide Image</label>
                 <input
                   type="file"
@@ -291,6 +307,17 @@ function HomepageCMS() {
                 </div>
               </div>
               <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Target Device</label>
+                <select
+                  value={form.device}
+                  onChange={(e) => setForm({ ...form, device: e.target.value })}
+                  className={inputClass}
+                >
+                  <option value="desktop">💻 Laptop/Desktop Banners</option>
+                  <option value="mobile">📱 Phone/Mobile Banners</option>
+                </select>
+              </div>
+              <div>
                 <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Banner Slide Image *</label>
                 <input
                   id="bannerImageInput"
@@ -325,6 +352,9 @@ function HomepageCMS() {
                 <div key={b.id} className="border border-gray-100 rounded-2xl overflow-hidden flex flex-col justify-between hover:shadow-md transition">
                   <div className="aspect-[21/9] w-full bg-gray-50 overflow-hidden relative border-b border-gray-100">
                     <img src={b.image} alt={b.title || "Banner"} className="w-full h-full object-cover" />
+                    <span className="absolute top-2 left-2 bg-[#013e37] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm uppercase">
+                      {b.device === "mobile" ? "📱 Mobile" : "💻 Desktop"}
+                    </span>
                     {!b.active && (
                       <span className="absolute top-2 right-2 bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
                         Inactive

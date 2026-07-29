@@ -356,6 +356,7 @@ model Banner {
   description  String   @default("")
   image        String
   link         String   @default("")
+  device       String   @default("desktop") // "desktop" | "mobile"
   active       Boolean  @default(true)
   displayOrder Int      @default(0)
   createdAt    DateTime @default(now())

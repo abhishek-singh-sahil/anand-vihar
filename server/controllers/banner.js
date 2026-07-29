@@ -29,7 +29,7 @@ export const getAdminBanners = async (req, res, next) => {
 // Admin: Create a banner
 export const createBanner = async (req, res, next) => {
   try {
-    const { title = "", description = "", link = "", displayOrder = 0, active = true } = req.body;
+    const { title = "", description = "", link = "", device = "desktop", displayOrder = 0, active = true } = req.body;
 
     if (!req.file) {
       return res.status(400).json({ success: false, message: "Banner image file is required" });
@@ -45,6 +45,7 @@ export const createBanner = async (req, res, next) => {
         description,
         image: imageUrl,
         link,
+        device,
         displayOrder: parseInt(displayOrder) || 0,
         active: active === "true" || active === true
       }
@@ -60,7 +61,7 @@ export const createBanner = async (req, res, next) => {
 export const updateBanner = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, description, link, displayOrder, active } = req.body;
+    const { title, description, link, device, displayOrder, active } = req.body;
 
     const banner = await prisma.banner.findUnique({ where: { id } });
     if (!banner) {
@@ -71,6 +72,7 @@ export const updateBanner = async (req, res, next) => {
     if (title !== undefined) updateData.title = title;
     if (description !== undefined) updateData.description = description;
     if (link !== undefined) updateData.link = link;
+    if (device !== undefined) updateData.device = device;
     if (displayOrder !== undefined) updateData.displayOrder = parseInt(displayOrder) || 0;
     if (active !== undefined) updateData.active = active === "true" || active === true;
 

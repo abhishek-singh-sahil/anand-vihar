@@ -1,6 +1,5 @@
 import React from "react";
 import Hero from "../../components/home/Hero";
-import StatsBanner from "../../components/home/StatsBanner";
 import Categories from "../../components/home/Categories";
 import FeaturedSweets from "../../components/home/FeaturedSweets";
 import WhyChooseUs from "../../components/home/WhyChooseUs";
@@ -16,7 +15,6 @@ function Home() {
   return (
     <>
       <Hero />
-      <StatsBanner />
       <Categories />
 
       <FeaturedSweets />
