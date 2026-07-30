@@ -38,8 +38,12 @@ const app = express();
 /*                                   SECURITY                                 */
 /* -------------------------------------------------------------------------- */
 
-// 1. Helmet security headers
-app.use(helmet());
+// 1. Helmet security headers (with cross-origin policy allowed for serving uploads)
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
 
 // 2. Rate limiter: max 300 requests per 15 minutes per IP
 const limiter = rateLimit({
@@ -95,6 +99,8 @@ app.get("/", (req, res) => {
     message: "Anand Vihar Sweet Shop E-Commerce API running successfully.",
   });
 });
+
+app.use("/uploads", express.static("uploads"));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/menu", menuRoutes);

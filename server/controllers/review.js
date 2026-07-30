@@ -26,17 +26,50 @@ export const addProductReview = async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Rating and comment are required." });
     }
 
-    // Check if user has purchased the item previously (verified purchase badge)
-    const orderMatch = await prisma.order.findFirst({
+    // Fetch user's delivered orders containing this product to count purchases
+    const orders = await prisma.order.findMany({
       where: {
         userId,
         status: "delivered",
         items: {
           some: { productId }
         }
+      },
+      include: {
+        items: {
+          where: { productId }
+        }
       }
     });
-    const isVerifiedPurchase = !!orderMatch;
+
+    let purchaseCount = 0;
+    orders.forEach(o => {
+      o.items.forEach(item => {
+        purchaseCount += item.quantity;
+      });
+    });
+
+    if (purchaseCount === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "You can only review products you have purchased and had delivered."
+      });
+    }
+
+    // Count user's existing reviews for this product
+    const reviewCount = await prisma.productReview.count({
+      where: {
+        productId,
+        userId
+      }
+    });
+
+    if (reviewCount >= purchaseCount) {
+      return res.status(400).json({
+        success: false,
+        message: "You have already reviewed this product. You cannot submit another review until you purchase this product again."
+      });
+    }
 
     const review = await prisma.productReview.create({
       data: {
@@ -47,7 +80,7 @@ export const addProductReview = async (req, res, next) => {
         comment,
         images: images || [],
         status: "approved", // auto-approved for frictionless user experience
-        isVerifiedPurchase
+        isVerifiedPurchase: true
       }
     });
 
@@ -171,6 +204,67 @@ export const adminDeleteReview = async (req, res, next) => {
     const { id } = req.params;
     await prisma.productReview.delete({ where: { id } });
     res.status(200).json({ success: true, message: "Review deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Check if user is eligible to review a product
+export const checkReviewEligibility = async (req, res, next) => {
+  try {
+    const { productId } = req.params;
+    const userId = req.user.id;
+
+    const orders = await prisma.order.findMany({
+      where: {
+        userId,
+        status: "delivered",
+        items: {
+          some: { productId }
+        }
+      },
+      include: {
+        items: {
+          where: { productId }
+        }
+      }
+    });
+
+    let purchaseCount = 0;
+    orders.forEach(o => {
+      o.items.forEach(item => {
+        purchaseCount += item.quantity;
+      });
+    });
+
+    if (purchaseCount === 0) {
+      return res.status(200).json({
+        success: true,
+        eligible: false,
+        message: "You can only review products that you have purchased and had delivered."
+      });
+    }
+
+    const reviewCount = await prisma.productReview.count({
+      where: {
+        productId,
+        userId
+      }
+    });
+
+    if (reviewCount >= purchaseCount) {
+      return res.status(200).json({
+        success: true,
+        eligible: false,
+        message: "You have already reviewed this product. You cannot submit another review until you purchase this product again."
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      eligible: true,
+      message: "You are eligible to review this product."
+    });
   } catch (error) {
     next(error);
   }

@@ -18,6 +18,7 @@ import {
   FaMapMarkerAlt,
   FaTicketAlt,
   FaHome,
+  FaEnvelope,
 } from "react-icons/fa";
 
 function AdminLayout() {
@@ -36,6 +37,7 @@ function AdminLayout() {
     { name: "Orders Manager", path: "/admin/orders", icon: <FaCalendarCheck /> },
     { name: "Users List", path: "/admin/customers", icon: <FaUsers /> },
     { name: "Testimonials", path: "/admin/testimonials", icon: <FaCommentDots /> },
+    { name: "Inbox Messages", path: "/admin/messages", icon: <FaEnvelope /> },
     { name: "Blogs Manager", path: "/admin/blogs", icon: <FaBookOpen /> },
     { name: "Gallery Media", path: "/admin/gallery", icon: <FaImages /> },
     { name: "Settings", path: "/admin/settings", icon: <FaCog /> },

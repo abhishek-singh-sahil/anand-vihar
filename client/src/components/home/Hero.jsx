@@ -207,7 +207,7 @@ function Hero() {
                     e.stopPropagation();
                     setCurrentMobile((prev) => (prev === 0 ? mobileSlides.length - 1 : prev - 1));
                   }}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/20 hover:bg-black/55 text-white flex items-center justify-center cursor-pointer transition border-none shadow-md backdrop-blur-sm z-30"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/10 hover:bg-black/55 text-white flex items-center justify-center cursor-pointer transition border-none shadow-md backdrop-blur-sm z-30"
                   aria-label="Previous Mobile Slide"
                 >
                   <ChevronLeft size={18} />
@@ -217,7 +217,7 @@ function Hero() {
                     e.stopPropagation();
                     setCurrentMobile((prev) => (prev + 1) % mobileSlides.length);
                   }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/20 hover:bg-black/55 text-white flex items-center justify-center cursor-pointer transition border-none shadow-md backdrop-blur-sm z-30"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/10 hover:bg-black/55 text-white flex items-center justify-center cursor-pointer transition border-none shadow-md backdrop-blur-sm z-30"
                   aria-label="Next Mobile Slide"
                 >
                   <ChevronRight size={18} />

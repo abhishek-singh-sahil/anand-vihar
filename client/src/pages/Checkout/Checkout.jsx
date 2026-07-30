@@ -41,6 +41,11 @@ function Checkout() {
   // Success view state
   const [placedOrder, setPlacedOrder] = useState(null);
 
+  // Coupon states
+  const [couponCode, setCouponCode] = useState("");
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponLoading, setCouponLoading] = useState(false);
+
   const fetchAddresses = async () => {
     try {
       const res = await api.get("/address");
@@ -69,10 +74,56 @@ function Checkout() {
     }
   };
 
+  const validateCouponOnMount = async (code, amount) => {
+    try {
+      setCouponLoading(true);
+      const res = await api.post("/coupons/validate", {
+        code,
+        orderAmount: amount
+      });
+      if (res.data?.success) {
+        setCouponCode(res.data.coupon.code);
+        setCouponDiscount(res.data.coupon.discountAmount);
+      }
+    } catch (error) {
+      console.error("Coupon validation on mount failed:", error);
+      localStorage.removeItem("appliedCouponCode");
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchAddresses();
     fetchPinCodes();
   }, []);
+
+  useEffect(() => {
+    const savedCoupon = localStorage.getItem("appliedCouponCode");
+    if (savedCoupon && cart.length > 0) {
+      const currentSubtotal = cart.reduce((total, item) => total + (item.price - (item.discount || 0)) * item.quantity, 0);
+      validateCouponOnMount(savedCoupon, currentSubtotal);
+    }
+  }, [cart]);
+
+  useEffect(() => {
+    if (selectedAddressId && addresses.length > 0 && pincodes.length > 0) {
+      const activeAddr = addresses.find(a => a.id === selectedAddressId);
+      if (activeAddr) {
+        // Find matching pincode zone
+        const matchingZone = pincodes.find(z => z.code === activeAddr.pinCode);
+        if (matchingZone) {
+          setSelectedPinCodeZone(matchingZone);
+          setPincodeSearch(matchingZone.code + " - " + matchingZone.areaName);
+          setDeliveryStatusMsg(`✓ Delivery Available! Charge: ₹${matchingZone.deliveryCharge} (${matchingZone.deliveryTime})`);
+        } else {
+          setSelectedPinCodeZone(null);
+          setPincodeSearch(activeAddr.pinCode);
+          setDeliveryStatusMsg(`❌ Sorry, Delivery is not available in area (${activeAddr.pinCode}).`);
+        }
+      }
+    }
+  }, [selectedAddressId, addresses, pincodes]);
 
   const handleAddAddress = async (e) => {
     e.preventDefault();
@@ -126,7 +177,8 @@ function Checkout() {
         paymentMethod: paymentMethod === "COD" ? "COD" : "WhatsApp Redirect",
         notes,
         shippingCharge,
-        pinCode: selectedPinCodeZone?.code || null
+        pinCode: selectedPinCodeZone?.code || null,
+        couponCode: couponCode || null
       };
 
       const res = await api.post("/orders", orderPayload);
@@ -134,6 +186,7 @@ function Checkout() {
         const orderInfo = res.data.order;
         setPlacedOrder(orderInfo);
         clearCart();
+        localStorage.removeItem("appliedCouponCode");
         toast.success("Order placed successfully!");
 
         // If user chose WhatsApp redirection, redirect immediately!
@@ -159,8 +212,8 @@ function Checkout() {
   const freeMin = settings?.freeDeliveryMinAmount ? Number(settings.freeDeliveryMinAmount) : 500;
   const defaultDeliveryCharge = settings?.deliveryCharge ? Number(settings.deliveryCharge) : 40;
   const pinZoneCharge = selectedPinCodeZone ? Number(selectedPinCodeZone.deliveryCharge) : defaultDeliveryCharge;
-  const shippingCharge = subtotal >= freeMin ? 0 : pinZoneCharge;
-  const grandTotal = subtotal + shippingCharge;
+  const shippingCharge = (subtotal - couponDiscount) >= freeMin ? 0 : pinZoneCharge;
+  const grandTotal = subtotal - couponDiscount + shippingCharge;
 
   const filteredPincodes = pincodes.filter((z) => {
     const q = pincodeSearch.toLowerCase();
@@ -385,7 +438,8 @@ function Checkout() {
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Search PIN Code or area (e.g. 825409 or Bazar)..."
+                  disabled={!!selectedAddressId}
+                  placeholder={selectedAddressId ? "PIN code auto-selected based on address details" : "Search PIN Code or area (e.g. 825409 or Bazar)..."}
                   value={pincodeSearch}
                   onFocus={() => setDropdownOpen(true)}
                   onBlur={() => setTimeout(() => setDropdownOpen(false), 200)}
@@ -397,9 +451,11 @@ function Checkout() {
                       setDeliveryStatusMsg("");
                     }
                   }}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#ff6b1a] pr-10"
+                  className={`w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#ff6b1a] pr-10 ${
+                    selectedAddressId ? "bg-gray-50 text-gray-500 cursor-not-allowed" : ""
+                  }`}
                 />
-                {selectedPinCodeZone && (
+                {selectedPinCodeZone && !selectedAddressId && (
                   <button
                     type="button"
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 bg-transparent border-none cursor-pointer text-lg font-bold"
@@ -409,7 +465,7 @@ function Checkout() {
                   </button>
                 )}
 
-                {dropdownOpen && filteredPincodes.length > 0 && (
+                {dropdownOpen && !selectedAddressId && filteredPincodes.length > 0 && (
                   <ul className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-52 overflow-y-auto">
                     {filteredPincodes.map((zone) => (
                       <li
@@ -426,24 +482,21 @@ function Checkout() {
                           <span className="font-bold text-gray-800">{zone.code}</span>
                           {zone.areaName && <span className="text-gray-500 ml-2">{zone.areaName}</span>}
                         </div>
-                        <div className="text-right">
-                          <span className="text-[#ff6b1a] font-bold text-xs">₹{zone.deliveryCharge}</span>
-                          {zone.deliveryTime && <span className="block text-gray-400 text-[10px]">{zone.deliveryTime}</span>}
-                        </div>
+                        <span className="text-xs font-bold text-[#ff6b1a]">₹{zone.deliveryCharge}</span>
                       </li>
                     ))}
                   </ul>
                 )}
-
-                {dropdownOpen && pincodeSearch.length >= 3 && filteredPincodes.length === 0 && (
-                  <div className="absolute z-20 w-full mt-1 bg-red-50 border border-red-200 rounded-xl shadow-lg px-4 py-3 text-sm text-red-600 font-bold">
-                    ⚠️ Sorry, Delivery is not available in your area.
-                  </div>
-                )}
               </div>
+              
+              {deliveryStatusMsg && (
+                <p className={`mt-3 text-xs font-bold ${deliveryStatusMsg.startsWith("❌") ? "text-red-500" : "text-green-600"}`}>
+                  {deliveryStatusMsg}
+                </p>
+              )}
 
-              {selectedPinCodeZone && (
-                <div className="mt-3 flex items-center gap-3 text-sm bg-green-50 border border-green-100 rounded-xl px-4 py-2.5">
+              {selectedPinCodeZone && !deliveryStatusMsg.startsWith("❌") && (
+                <div className="mt-4 bg-green-50/50 border border-green-100 rounded-xl p-3 flex items-center gap-2.5 text-xs text-green-700">
                   <span className="text-green-600 font-bold text-base">✓</span>
                   <div>
                     <span className="font-bold text-green-700">{selectedPinCodeZone.code}</span>
@@ -536,12 +589,31 @@ function Checkout() {
                 ))}
               </div>
 
+              {couponCode && (
+                <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] text-green-700 font-bold uppercase tracking-wider">Applied Coupon</p>
+                    <p className="font-extrabold text-[#013e37] text-sm">{couponCode}</p>
+                  </div>
+                  <span className="text-xs text-green-700 font-bold">
+                    Saved ₹{couponDiscount}
+                  </span>
+                </div>
+              )}
+
               <hr className="border-gray-100" />
 
               <div className="flex justify-between text-gray-600 text-sm">
                 <span>Subtotal</span>
                 <span>₹{subtotal}</span>
               </div>
+
+              {couponDiscount > 0 && (
+                <div className="flex justify-between text-green-600 text-sm font-semibold">
+                  <span>Coupon Discount</span>
+                  <span>- ₹{couponDiscount}</span>
+                </div>
+              )}
 
               <div className="flex justify-between text-gray-600 text-sm">
                 <div>

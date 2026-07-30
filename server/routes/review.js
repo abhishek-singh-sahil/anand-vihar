@@ -4,6 +4,7 @@ import {
   addProductReview, 
   likeProductReview, 
   replyToProductReview, 
+  checkReviewEligibility,
   adminGetReviews, 
   adminUpdateReviewStatus, 
   adminDeleteReview 
@@ -15,6 +16,7 @@ const router = express.Router();
 
 router.get("/product/:productId", getProductReviews);
 router.post("/product/:productId", protect, sanitizeInput, addProductReview);
+router.get("/check-eligibility/:productId", protect, checkReviewEligibility);
 router.put("/:id/like", protect, likeProductReview);
 router.post("/:id/reply", protect, sanitizeInput, replyToProductReview);
 

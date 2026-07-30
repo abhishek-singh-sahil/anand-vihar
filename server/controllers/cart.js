@@ -8,7 +8,10 @@ export const getCart = async (req, res, next) => {
       where: { userId },
       include: {
         product: {
-          include: { categories: true }
+          include: { 
+            categories: true,
+            variants: { where: { active: true }, orderBy: { price: "asc" } }
+          }
         },
         variant: true
       }
@@ -35,7 +38,8 @@ export const getCart = async (req, res, next) => {
           description: item.product.description,
           image: item.product.image,
           categories: item.product.categories.map(c => c.name),
-          available: item.product.available
+          available: item.product.available,
+          variants: item.product.variants || []
         }
       };
     });
@@ -109,7 +113,10 @@ export const addToCart = async (req, res, next) => {
       where: { userId },
       include: {
         product: {
-          include: { categories: true }
+          include: { 
+            categories: true,
+            variants: { where: { active: true }, orderBy: { price: "asc" } }
+          }
         },
         variant: true
       }
@@ -133,9 +140,11 @@ export const addToCart = async (req, res, next) => {
         product: {
           id: item.product.id,
           name: item.product.name,
+          description: item.product.description,
           image: item.product.image,
           categories: item.product.categories.map(c => c.name),
-          available: item.product.available
+          available: item.product.available,
+          variants: item.product.variants || []
         }
       };
     });
@@ -146,27 +155,78 @@ export const addToCart = async (req, res, next) => {
   }
 };
 
-// Update cart item quantity
+// Update cart item quantity or variant
 export const updateCartQuantity = async (req, res, next) => {
   try {
     const userId = req.user.id;
     const { id } = req.params;
-    const { quantity } = req.body;
+    const { quantity, variantId } = req.body;
 
-    if (Number(quantity) <= 0) {
-      await prisma.cartItem.delete({ where: { id } });
-    } else {
-      await prisma.cartItem.update({
-        where: { id },
-        data: { quantity: Number(quantity) }
-      });
+    const currentItem = await prisma.cartItem.findUnique({
+      where: { id },
+      include: { product: true }
+    });
+
+    if (!currentItem) {
+      return res.status(404).json({ success: false, message: "Cart item not found" });
     }
 
+    if (quantity !== undefined) {
+      if (Number(quantity) <= 0) {
+        await prisma.cartItem.delete({ where: { id } });
+      } else {
+        await prisma.cartItem.update({
+          where: { id },
+          data: { quantity: Number(quantity) }
+        });
+      }
+    }
+
+    if (variantId !== undefined && variantId !== currentItem.variantId) {
+      // Validate the target variant exists
+      const targetVariant = await prisma.productVariant.findUnique({
+        where: { id: variantId }
+      });
+      if (!targetVariant || !targetVariant.active) {
+        return res.status(404).json({ success: false, message: "Variant not found or inactive" });
+      }
+
+      // Check if another item with the same product and target variant already exists in cart
+      const duplicateItem = await prisma.cartItem.findFirst({
+        where: {
+          userId,
+          productId: currentItem.productId,
+          variantId,
+          id: { not: id }
+        }
+      });
+
+      if (duplicateItem) {
+        // Merge quantities and remove current
+        const newQty = duplicateItem.quantity + (quantity !== undefined ? Number(quantity) : currentItem.quantity);
+        await prisma.cartItem.update({
+          where: { id: duplicateItem.id },
+          data: { quantity: newQty }
+        });
+        await prisma.cartItem.delete({ where: { id } });
+      } else {
+        // Just update variantId
+        await prisma.cartItem.update({
+          where: { id },
+          data: { variantId }
+        });
+      }
+    }
+
+    // Return updated cart items list
     const items = await prisma.cartItem.findMany({
       where: { userId },
       include: {
         product: {
-          include: { categories: true }
+          include: { 
+            categories: true,
+            variants: { where: { active: true }, orderBy: { price: "asc" } }
+          }
         },
         variant: true
       }
@@ -190,14 +250,16 @@ export const updateCartQuantity = async (req, res, next) => {
         product: {
           id: item.product.id,
           name: item.product.name,
+          description: item.product.description,
           image: item.product.image,
           categories: item.product.categories.map(c => c.name),
-          available: item.product.available
+          available: item.product.available,
+          variants: item.product.variants || []
         }
       };
     });
 
-    res.status(200).json({ success: true, message: "Cart updated", cart: mappedItems });
+    res.status(200).json({ success: true, message: "Cart updated successfully", cart: mappedItems });
   } catch (error) {
     next(error);
   }
@@ -215,7 +277,10 @@ export const removeFromCart = async (req, res, next) => {
       where: { userId },
       include: {
         product: {
-          include: { categories: true }
+          include: { 
+            categories: true,
+            variants: { where: { active: true }, orderBy: { price: "asc" } }
+          }
         },
         variant: true
       }
@@ -239,9 +304,11 @@ export const removeFromCart = async (req, res, next) => {
         product: {
           id: item.product.id,
           name: item.product.name,
+          description: item.product.description,
           image: item.product.image,
           categories: item.product.categories.map(c => c.name),
-          available: item.product.available
+          available: item.product.available,
+          variants: item.product.variants || []
         }
       };
     });

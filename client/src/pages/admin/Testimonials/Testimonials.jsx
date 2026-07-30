@@ -16,11 +16,11 @@ function Testimonials() {
   const [review, setReview] = useState("");
   const [isPinned, setIsPinned] = useState(false);
   const [isFeatured, setIsFeatured] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [editMode, setEditMode] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [mediaFiles, setMediaFiles] = useState([]);
   const [submitting, setSubmitting] = useState(false);
-
-  // Selection
-  const [selectedIds, setSelectedIds] = useState([]);
 
   const fetchTestimonials = async () => {
     setLoading(true);
@@ -65,7 +65,7 @@ function Testimonials() {
 
   const handleTogglePinned = async (item) => {
     try {
-      const res = await api.put(`/testimonials/admin/${item._id}`, { isPinned: !item.isPinned });
+      const res = await api.put(`/testimonials/admin/${item.id}`, { isPinned: !item.isPinned });
       if (res.data.success) {
         toast.success(item.isPinned ? "Review unpinned" : "Review pinned");
         fetchTestimonials();
@@ -77,7 +77,7 @@ function Testimonials() {
 
   const handleToggleFeatured = async (item) => {
     try {
-      const res = await api.put(`/testimonials/admin/${item._id}`, { isFeatured: !item.isFeatured });
+      const res = await api.put(`/testimonials/admin/${item.id}`, { isFeatured: !item.isFeatured });
       if (res.data.success) {
         toast.success(item.isFeatured ? "Removed from featured" : "Marked as featured");
         fetchTestimonials();
@@ -130,6 +130,30 @@ function Testimonials() {
     }
   };
 
+  const openEditModal = (item) => {
+    setEditingId(item.id);
+    setName(item.name);
+    setCity(item.city);
+    setRating(item.rating);
+    setReview(item.review);
+    setIsPinned(item.isPinned);
+    setIsFeatured(item.isFeatured);
+    setEditMode(true);
+    setShowModal(true);
+  };
+
+  const openCreateModal = () => {
+    setEditingId(null);
+    setName("");
+    setCity("");
+    setRating(5);
+    setReview("");
+    setIsPinned(false);
+    setIsFeatured(false);
+    setEditMode(false);
+    setShowModal(true);
+  };
+
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     if (!name || !city || !review) {
@@ -150,24 +174,43 @@ function Testimonials() {
     });
 
     try {
-      const res = await api.post("/testimonials/admin", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      if (res.data.success) {
-        toast.success("Testimonial review added by admin!");
-        setShowModal(false);
-        // Reset states
-        setName("");
-        setCity("");
-        setRating(5);
-        setReview("");
-        setIsPinned(false);
-        setIsFeatured(false);
-        setMediaFiles([]);
-        fetchTestimonials();
+      if (editMode) {
+        const res = await api.put(`/testimonials/admin/${editingId}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        if (res.data.success) {
+          toast.success("Testimonial review updated successfully!");
+          setShowModal(false);
+          setName("");
+          setCity("");
+          setRating(5);
+          setReview("");
+          setIsPinned(false);
+          setIsFeatured(false);
+          setMediaFiles([]);
+          setEditMode(false);
+          setEditingId(null);
+          fetchTestimonials();
+        }
+      } else {
+        const res = await api.post("/testimonials/admin", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        if (res.data.success) {
+          toast.success("Testimonial review added by admin!");
+          setShowModal(false);
+          setName("");
+          setCity("");
+          setRating(5);
+          setReview("");
+          setIsPinned(false);
+          setIsFeatured(false);
+          setMediaFiles([]);
+          fetchTestimonials();
+        }
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to create testimonial");
+      toast.error(error.response?.data?.message || "Failed to save testimonial");
     } finally {
       setSubmitting(false);
     }
@@ -202,7 +245,7 @@ function Testimonials() {
             </>
           )}
           <button
-            onClick={() => setShowModal(true)}
+            onClick={openCreateModal}
             className="px-4 py-2.5 bg-[#013e37] hover:bg-[#025347] text-white rounded-xl font-semibold text-sm cursor-pointer"
           >
             + Add Testimonial
@@ -258,12 +301,12 @@ function Testimonials() {
             </thead>
             <tbody>
               {testimonials.map((item) => (
-                <tr key={item._id} className="border-b border-gray-50 hover:bg-gray-50/50 transition">
+                <tr key={item.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition">
                   <td className="py-4 px-2">
                     <input
                       type="checkbox"
-                      checked={selectedIds.includes(item._id)}
-                      onChange={() => toggleSelect(item._id)}
+                      checked={selectedIds.includes(item.id)}
+                      onChange={() => toggleSelect(item.id)}
                       className="cursor-pointer"
                     />
                   </td>
@@ -316,7 +359,7 @@ function Testimonials() {
                     <div className="flex justify-end gap-1.5">
                       {item.status !== "approved" && (
                         <button
-                          onClick={() => handleStatusUpdate(item._id, "approved")}
+                          onClick={() => handleStatusUpdate(item.id, "approved")}
                           className="px-2 py-1 text-xs bg-green-50 hover:bg-green-100 text-green-700 font-bold rounded-lg transition cursor-pointer"
                         >
                           Approve
@@ -324,14 +367,20 @@ function Testimonials() {
                       )}
                       {item.status !== "rejected" && (
                         <button
-                          onClick={() => handleStatusUpdate(item._id, "rejected")}
+                          onClick={() => handleStatusUpdate(item.id, "rejected")}
                           className="px-2 py-1 text-xs bg-red-50 hover:bg-red-100 text-red-500 font-bold rounded-lg transition cursor-pointer"
                         >
                           Reject
                         </button>
                       )}
                       <button
-                        onClick={() => handleDelete(item._id)}
+                        onClick={() => openEditModal(item)}
+                        className="px-2 py-1 text-xs bg-orange-50 hover:bg-orange-100 text-[#ff9248] font-bold rounded-lg transition cursor-pointer"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item.id)}
                         className="px-2 py-1 text-xs bg-gray-50 hover:bg-gray-100 text-gray-500 font-bold rounded-lg transition cursor-pointer"
                       >
                         Delete
@@ -345,11 +394,12 @@ function Testimonials() {
         </div>
       )}
 
-      {/* Testimonial Form Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-6">
           <div className="bg-white rounded-3xl max-w-lg w-full p-8 max-h-[90vh] overflow-y-auto space-y-6">
-            <h3 className="text-xl font-bold text-gray-800">Add Testimonial Review</h3>
+            <h3 className="text-xl font-bold text-gray-800">
+              {editMode ? "Edit Testimonial Review" : "Add Testimonial Review"}
+            </h3>
             
             <form onSubmit={handleFormSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">

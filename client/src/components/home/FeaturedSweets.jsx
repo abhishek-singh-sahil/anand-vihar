@@ -119,7 +119,8 @@ function FeaturedSweets() {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.3 }}
-                    className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm hover:shadow-md transition flex flex-col justify-between"
+                    className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm hover:shadow-md transition flex flex-col justify-between cursor-pointer"
+                    onClick={() => navigate(`/product/${item._id}`)}
                   >
                     <div>
                       {/* Image container */}
@@ -202,7 +203,8 @@ function FeaturedSweets() {
               return (
                 <div
                   key={item._id || idx}
-                  className="bg-white border border-gray-100 rounded-2xl p-2.5 shadow-sm flex flex-col justify-between"
+                  className="bg-white border border-gray-100 rounded-2xl p-2.5 shadow-sm flex flex-col justify-between cursor-pointer"
+                  onClick={() => navigate(`/product/${item._id}`)}
                 >
                   <div>
                     {/* Compact Image */}

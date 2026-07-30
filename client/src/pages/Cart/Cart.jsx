@@ -6,7 +6,7 @@ import { toast } from "react-hot-toast";
 import { FaTrash, FaPlus, FaMinus, FaShoppingBag, FaArrowRight, FaTicketAlt } from "react-icons/fa";
 
 function Cart() {
-  const { cart, loading, updateQuantity, removeFromCart, getCartCount } = useCart();
+  const { cart, loading, updateQuantity, updateCartItemVariant, removeFromCart, getCartCount } = useCart();
   const { settings } = useAuth();
   
   const [couponCode, setCouponCode] = useState("");
@@ -36,12 +36,14 @@ function Cart() {
       if (res.data?.success) {
         setAppliedCoupon(res.data.coupon.code);
         setCouponDiscount(res.data.coupon.discountAmount);
+        localStorage.setItem("appliedCouponCode", res.data.coupon.code);
         toast.success(res.data.message || "Coupon applied successfully!");
       }
     } catch (error) {
       toast.error(error.response?.data?.message || "Invalid or expired coupon code.");
       setAppliedCoupon(null);
       setCouponDiscount(0);
+      localStorage.removeItem("appliedCouponCode");
     } finally {
       setCouponLoading(false);
     }
@@ -51,6 +53,7 @@ function Cart() {
     setAppliedCoupon(null);
     setCouponDiscount(0);
     setCouponCode("");
+    localStorage.removeItem("appliedCouponCode");
     toast.success("Coupon removed.");
   };
 
@@ -115,11 +118,23 @@ function Cart() {
                       <h3 className="font-extrabold text-gray-800 text-lg">{item.product.name}</h3>
                       <div className="flex flex-wrap gap-2 items-center text-xs mt-1">
                         <span className="text-[#013e37] font-bold">{item.product.categories && item.product.categories[0]}</span>
-                        {item.weight && (
+                        {item.product.variants && item.product.variants.length > 1 ? (
+                          <select
+                            value={item.variantId}
+                            onChange={(e) => updateCartItemVariant(item.id, e.target.value)}
+                            className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded font-bold border border-gray-200 outline-none cursor-pointer text-xs"
+                          >
+                            {item.product.variants.map((v) => (
+                              <option key={v.id} value={v.id}>
+                                {v.weight} (₹{v.price - (v.discount || 0)})
+                              </option>
+                            ))}
+                          </select>
+                        ) : item.weight ? (
                           <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded font-bold">
                             {item.weight}
                           </span>
-                        )}
+                        ) : null}
                       </div>
                       <div className="flex items-center gap-2 mt-2">
                         <span className="font-bold text-gray-800">₹{unitPrice}</span>

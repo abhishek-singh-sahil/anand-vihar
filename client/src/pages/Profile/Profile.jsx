@@ -3,9 +3,10 @@ import { useAuth } from "../../hooks/useAuth";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "../../services/api";
+import { FaStar } from "react-icons/fa";
 
 // ─── Star Rating Widget ─────────────────────────────────────────────────────
-function StarRating({ value, onChange, readonly = false, size = "text-2xl" }) {
+function StarRating({ value, onChange, readonly = false, size = "text-xl" }) {
   const [hovered, setHovered] = useState(0);
   return (
     <div className="flex gap-1">
@@ -17,11 +18,15 @@ function StarRating({ value, onChange, readonly = false, size = "text-2xl" }) {
           onClick={() => !readonly && onChange && onChange(star)}
           onMouseEnter={() => !readonly && setHovered(star)}
           onMouseLeave={() => !readonly && setHovered(0)}
-          className={`${size} cursor-pointer bg-transparent border-none p-0 leading-none transition-transform ${
-            !readonly ? "hover:scale-110" : "cursor-default"
+          className={`${size} cursor-pointer bg-transparent border-none p-0.5 leading-none transition-transform duration-100 active:scale-90 ${
+            readonly ? "cursor-default" : ""
           }`}
         >
-          {(hovered || value) >= star ? "⭐" : "☆"}
+          <FaStar
+            className={`transition-colors ${
+              (hovered || value) >= star ? "text-amber-400 fill-amber-400" : "text-gray-200"
+            }`}
+          />
         </button>
       ))}
     </div>
@@ -52,12 +57,38 @@ function ReviewModal({ order, onClose, onReviewed }) {
   const [ratings, setRatings] = useState({});
   const [comments, setComments] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [eligibility, setEligibility] = useState({});
+
+  useEffect(() => {
+    const checkAllEligibility = async () => {
+      const statuses = {};
+      for (const item of items) {
+        try {
+          const res = await api.get(`/reviews/check-eligibility/${item.productId}`);
+          statuses[item.productId] = {
+            eligible: res.data.eligible,
+            message: res.data.message
+          };
+        } catch (err) {
+          statuses[item.productId] = {
+            eligible: false,
+            message: "Error checking review eligibility status"
+          };
+        }
+      }
+      setEligibility(statuses);
+    };
+    checkAllEligibility();
+  }, [order]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     let successCount = 0;
     for (const item of items) {
+      // Skip if not eligible
+      if (eligibility[item.productId]?.eligible === false) continue;
+
       const rating = ratings[item.productId];
       const comment = comments[item.productId];
       if (!rating || !comment?.trim()) continue;
@@ -65,7 +96,7 @@ function ReviewModal({ order, onClose, onReviewed }) {
         await api.post(`/reviews/product/${item.productId}`, { rating, comment });
         successCount++;
       } catch (err) {
-        toast.error(`Review failed for ${item.name}`);
+        toast.error(err.response?.data?.message || `Review failed for ${item.name}`);
       }
     }
     setSubmitting(false);
@@ -73,7 +104,7 @@ function ReviewModal({ order, onClose, onReviewed }) {
       toast.success(`${successCount} review${successCount > 1 ? "s" : ""} submitted! Thank you 🎉`);
       onReviewed();
     } else {
-      toast.error("Please fill rating & comment for at least one item");
+      toast.error("Please fill rating & comment for at least one eligible item");
     }
   };
 
@@ -99,39 +130,54 @@ function ReviewModal({ order, onClose, onReviewed }) {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {items.map((item) => (
-            <div key={item.productId} className="bg-gray-50 rounded-2xl p-4 space-y-3">
-              <div className="flex items-center gap-3">
-                {item.image && (
-                  <img src={item.image} alt={item.name} className="w-12 h-12 rounded-xl object-cover" />
-                )}
-                <div>
-                  <p className="font-bold text-gray-800 text-sm">{item.name}</p>
-                  {item.weight && <p className="text-xs text-gray-400">{item.weight}</p>}
+          {items.map((item) => {
+            const status = eligibility[item.productId];
+            const isEligible = status === undefined ? true : status.eligible; // default to true during loading
+
+            return (
+              <div key={item.id || item.productId} className="bg-gray-50 rounded-2xl p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  {item.image && (
+                    <img src={item.image} alt={item.name} className="w-12 h-12 rounded-xl object-cover" />
+                  )}
+                  <div>
+                    <p className="font-bold text-gray-800 text-sm">{item.name}</p>
+                    {item.weight && <p className="text-xs text-gray-400">{item.weight}</p>}
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <p className="text-xs font-bold text-gray-500 uppercase mb-1">Your Rating</p>
-                <StarRating
-                  value={ratings[item.productId] || 0}
-                  onChange={(val) => setRatings((prev) => ({ ...prev, [item.productId]: val }))}
-                  size="text-2xl"
-                />
-              </div>
+                {status !== undefined && !status.eligible ? (
+                  <div className="bg-orange-50 border border-orange-100 text-orange-800 text-xs rounded-xl p-3 font-medium">
+                    ⚠️ {status.message}
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <p className="text-xs font-bold text-gray-500 uppercase mb-1">Your Rating</p>
+                      <StarRating
+                        value={ratings[item.productId] || 0}
+                        onChange={(val) => setRatings((prev) => ({ ...prev, [item.productId]: val }))}
+                        size="text-2xl"
+                        readonly={!isEligible}
+                      />
+                    </div>
 
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Your Review</label>
-                <textarea
-                  rows={2}
-                  value={comments[item.productId] || ""}
-                  onChange={(e) => setComments((prev) => ({ ...prev, [item.productId]: e.target.value }))}
-                  placeholder="Share your experience with this product..."
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff9248] resize-none"
-                />
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Your Review</label>
+                      <textarea
+                        rows={2}
+                        disabled={!isEligible}
+                        value={comments[item.productId] || ""}
+                        onChange={(e) => setComments((prev) => ({ ...prev, [item.productId]: e.target.value }))}
+                        placeholder="Share your experience with this product..."
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff9248] resize-none disabled:bg-gray-100 disabled:text-gray-400"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           <div className="flex gap-3">
             <button

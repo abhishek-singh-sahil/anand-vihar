@@ -86,7 +86,7 @@ function Blogs() {
     try {
       let res;
       if (editingBlog) {
-        res = await api.put(`/blogs/${editingBlog._id}`, formData, {
+        res = await api.put(`/blogs/${editingBlog.id || editingBlog._id}`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
       } else {
@@ -172,7 +172,7 @@ function Blogs() {
             </thead>
             <tbody>
               {blogs.map((blog) => (
-                <tr key={blog._id} className="border-b border-gray-50 hover:bg-gray-50/50 transition">
+                <tr key={blog.id || blog._id} className="border-b border-gray-50 hover:bg-gray-50/50 transition">
                   <td className="py-4 px-2">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
@@ -197,7 +197,7 @@ function Blogs() {
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDelete(blog._id)}
+                        onClick={() => handleDelete(blog.id || blog._id)}
                         className="px-2.5 py-1 text-xs bg-red-50 hover:bg-red-100 text-red-500 font-bold rounded-lg transition cursor-pointer"
                       >
                         Delete

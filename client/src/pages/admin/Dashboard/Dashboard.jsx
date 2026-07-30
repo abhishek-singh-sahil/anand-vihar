@@ -43,12 +43,12 @@ function Dashboard() {
   const { stats, visitorData, mostViewedBlogs, mostPopularTestimonials } = data;
 
   const statCards = [
-    { name: "Total Users", val: stats.totalUsers, desc: "Registered accounts", color: "border-l-blue-500 text-blue-600" },
-    { name: "Reservations Requested", val: stats.totalReservations, desc: `${stats.pendingReservations} Pending / ${stats.approvedReservations} Approved`, color: "border-l-orange-500 text-orange-500" },
-    { name: "Unread Messages", val: stats.unreadMessages, desc: "Form inquiries", color: "border-l-red-500 text-red-500" },
-    { name: "Subscribers", val: stats.totalSubscribers, desc: "Active newsletter list", color: "border-l-teal-500 text-teal-600" },
-    { name: "Blogs Published", val: stats.totalBlogs, desc: `${stats.blogViews} Total Views`, color: "border-l-purple-500 text-purple-600" },
-    { name: "Testimonials Submitted", val: stats.totalTestimonials, desc: `${stats.pendingTestimonials} Pending approval`, color: "border-l-indigo-500 text-indigo-600" },
+    { name: "Total Users", val: stats.totalUsers, desc: "Registered accounts", color: "border-l-blue-500 text-blue-600", link: "/admin/customers" },
+    { name: "Total Orders", val: stats.totalOrders, desc: `${stats.pendingOrders || 0} Pending / ${stats.completedOrders || 0} Delivered`, color: "border-l-orange-500 text-orange-500", link: "/admin/orders" },
+    { name: "Unread Messages", val: stats.unreadMessages, desc: "Form inquiries", color: "border-l-red-500 text-red-500", link: "/admin/messages" },
+    { name: "Total Revenue", val: `₹${stats.totalRevenue?.toLocaleString("en-IN") || 0}`, desc: "Sum of completed orders", color: "border-l-teal-500 text-teal-600" },
+    { name: "Blogs Published", val: stats.totalBlogs, desc: `${stats.blogViews} Total Views`, color: "border-l-purple-500 text-purple-600", link: "/admin/blogs" },
+    { name: "Testimonials Submitted", val: stats.totalTestimonials, desc: `${stats.pendingTestimonials} Pending approval`, color: "border-l-indigo-500 text-indigo-600", link: "/admin/testimonials" },
   ];
 
   return (
@@ -107,20 +107,29 @@ function Dashboard() {
 
       {/* Metrics Cards list */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {statCards.map((card, idx) => (
-          <div
-            key={idx}
-            className={`bg-white p-6 rounded-2xl border-l-4 shadow-sm border border-gray-100 flex flex-col justify-between ${card.color}`}
-          >
-            <div>
-              <span className="text-xs font-bold uppercase tracking-widest text-gray-400 block mb-1">
-                {card.name}
-              </span>
-              <h2 className="text-3xl font-extrabold text-gray-800 leading-none">{card.val}</h2>
+        {statCards.map((card, idx) => {
+          const CardContent = (
+            <div className={`h-full bg-white p-6 rounded-2xl border-l-4 shadow-sm border border-gray-100 flex flex-col justify-between ${card.color}`}>
+              <div>
+                <span className="text-xs font-bold uppercase tracking-widest text-gray-400 block mb-1">
+                  {card.name}
+                </span>
+                <h2 className="text-3xl font-extrabold text-gray-800 leading-none">{card.val}</h2>
+              </div>
+              <span className="text-xs text-gray-500 font-medium mt-4 block">{card.desc}</span>
             </div>
-            <span className="text-xs text-gray-500 font-medium mt-4 block">{card.desc}</span>
-          </div>
-        ))}
+          );
+
+          return card.link ? (
+            <Link key={idx} to={card.link} className="no-underline block h-full select-none cursor-pointer">
+              {CardContent}
+            </Link>
+          ) : (
+            <div key={idx} className="h-full select-none">
+              {CardContent}
+            </div>
+          );
+        })}
       </div>
 
       {/* Analytics Charts */}
@@ -147,9 +156,9 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Reservations Chart */}
+        {/* Orders Chart */}
         <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100">
-          <h4 className="font-bold text-gray-800 text-lg mb-6">Weekly Reservations Trend</h4>
+          <h4 className="font-bold text-gray-800 text-lg mb-6">Weekly Orders Trend</h4>
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={visitorData}>
@@ -157,7 +166,7 @@ function Dashboard() {
                 <XAxis dataKey="day" stroke="#94a3b8" fontSize={12} tickLine={false} />
                 <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} />
                 <Tooltip />
-                <Bar dataKey="reservations" fill="#013e37" radius={[6, 6, 0, 0]} barSize={25} />
+                <Bar dataKey="orders" fill="#013e37" radius={[6, 6, 0, 0]} barSize={25} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -171,7 +180,7 @@ function Dashboard() {
           <h4 className="font-bold text-gray-800 text-lg border-b border-gray-50 pb-3">Popular Blogs</h4>
           <div className="divide-y divide-gray-50">
             {mostViewedBlogs.map((b, idx) => (
-              <div key={b._id} className="py-3 flex items-center gap-4 group">
+              <div key={b.id} className="py-3 flex items-center gap-4 group">
                 <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
                   <img src={b.image} alt={b.title} className="w-full h-full object-cover" />
                 </div>
@@ -198,7 +207,7 @@ function Dashboard() {
           <h4 className="font-bold text-gray-800 text-lg border-b border-gray-50 pb-3">Top Testimonials</h4>
           <div className="divide-y divide-gray-50">
             {mostPopularTestimonials.map((t, idx) => (
-              <div key={t._id} className="py-3 flex items-center justify-between gap-4">
+              <div key={t.id} className="py-3 flex items-center justify-between gap-4">
                 <div className="min-w-0 flex-grow">
                   <h5 className="font-bold text-sm text-gray-800 leading-tight">{t.name}</h5>
                   <p className="text-xs text-gray-500 line-clamp-1 mt-1">"{t.review}"</p>

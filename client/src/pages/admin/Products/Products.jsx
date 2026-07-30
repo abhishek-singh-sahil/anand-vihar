@@ -238,7 +238,7 @@ function Products() {
         >
           <option value="">All Categories</option>
           {categories.map(c => (
-            <option key={c._id} value={c.name}>{c.name}</option>
+            <option key={c.id || c._id} value={c.name}>{c.name}</option>
           ))}
         </select>
       </div>

@@ -38,6 +38,26 @@ export const protect = async (req, res, next) => {
       });
     }
 
+    // Check if user is blocked
+    if (user.isBlocked) {
+      // Check if block duration is expired
+      if (user.blockedUntil && new Date() > new Date(user.blockedUntil)) {
+        // Automatically unblock user
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { isBlocked: false, blockedUntil: null }
+        });
+      } else {
+        const blockMsg = user.blockedUntil
+          ? `Your account has been temporarily blocked until ${new Date(user.blockedUntil).toLocaleString()}.`
+          : "Your account has been permanently blocked by the administrator.";
+        return res.status(403).json({
+          success: false,
+          message: blockMsg
+        });
+      }
+    }
+
     // Exclude password field
     delete user.password;
 

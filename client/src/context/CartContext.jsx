@@ -56,6 +56,19 @@ export const CartProvider = ({ children }) => {
     }
   };
 
+  const updateCartItemVariant = async (id, variantId) => {
+    try {
+      const res = await api.put(`/cart/${id}`, { variantId });
+      if (res.data?.success) {
+        setCart(res.data.cart || []);
+        return true;
+      }
+    } catch (err) {
+      console.error("Update variant error:", err);
+    }
+    return false;
+  };
+
   const removeFromCart = async (id) => {
     try {
       const res = await api.delete(`/cart/${id}`);
@@ -83,7 +96,7 @@ export const CartProvider = ({ children }) => {
   };
 
   return (
-    <CartContext.Provider value={{ cart, loading, fetchCart, addToCart, updateQuantity, removeFromCart, clearCart, getCartCount }}>
+    <CartContext.Provider value={{ cart, loading, fetchCart, addToCart, updateQuantity, updateCartItemVariant, removeFromCart, clearCart, getCartCount }}>
       {children}
     </CartContext.Provider>
   );

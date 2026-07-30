@@ -99,28 +99,28 @@ function Categories() {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
-                whileHover={{ y: -6, scale: 1.02 }}
+                whileHover={{ y: -6 }}
                 onClick={() => navigate(`/menu?category=${encodeURIComponent(cat.name)}`)}
-                className="w-48 sm:w-56 bg-white border border-gray-100 rounded-3xl p-5 shadow-sm hover:shadow-md transition duration-300 text-center shrink-0 cursor-pointer snap-start flex flex-col items-center select-none"
+                className="w-36 sm:w-44 bg-white border border-gray-200 rounded-3xl p-2.5 sm:p-3 shadow-sm hover:shadow-md hover:border-orange-100 transition-all duration-300 text-center shrink-0 cursor-pointer snap-start flex flex-col items-center select-none group"
               >
                 {/* Category Image Box */}
-                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-orange-50/50 flex items-center justify-center mb-4 border border-gray-50">
+                <div className="w-full aspect-square rounded-2xl overflow-hidden bg-gradient-to-tr from-[#ffefb3]/20 via-orange-50/30 to-[#ff9248]/10 flex items-center justify-center mb-3 border border-gray-50/50 relative">
                   {cat.image ? (
                     <img
                       src={cat.image}
                       alt={cat.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-108"
                       loading="lazy"
                     />
                   ) : (
-                    <span className="text-[36px] text-[#ff9248] font-bold">
+                    <span className="text-4xl sm:text-5xl font-serif font-black text-[#ff9248]/80 drop-shadow-sm select-none">
                       {cat.name.charAt(0)}
                     </span>
                   )}
                 </div>
 
                 {/* Name */}
-                <h3 className="font-bold text-gray-800 text-sm sm:text-base line-clamp-1 group-hover:text-[#ff9248]">
+                <h3 className="font-extrabold text-gray-800 text-xs sm:text-sm line-clamp-1 group-hover:text-[#ff9248] transition-colors duration-200">
                   {cat.name}
                 </h3>
               </motion.div>

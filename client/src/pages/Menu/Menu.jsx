@@ -103,41 +103,34 @@ function Menu() {
         <div className="absolute -top-40 -left-40 h-[420px] w-[420px] rounded-full bg-[#ff9248]/10 blur-[150px]" />
         <div className="absolute bottom-0 right-0 h-[420px] w-[420px] rounded-full bg-[#013e37]/10 blur-[150px]" />
 
-        <div className="section py-20">
+        <div className="section py-8 sm:py-10">
           <motion.div
-            initial={{ opacity: 0, y: 40 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.6 }}
             className="mx-auto max-w-4xl text-center"
           >
-            <span className="badge">
-              <Sparkles size={16} />
-              Our Menu
-            </span>
-            <h1 className="mt-8 text-5xl font-extrabold leading-tight text-[#013e37] md:text-6xl">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight text-[#013e37]">
               Discover Authentic
               <span className="text-[#ff9248]"> Flavours</span>
             </h1>
-            <p className="mx-auto mt-6 max-w-3xl text-lg leading-9 text-slate-600">
-              Explore our carefully crafted collection of traditional Indian sweets, restaurant favourites, snacks, and beverages. Prepared fresh daily with premium ingredients.
-            </p>
           </motion.div>
 
           {/* ================= SEARCH ================= */}
           <motion.div
-            initial={{ opacity: 0, y: 40 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.8 }}
-            className="mx-auto mt-12 max-w-3xl"
+            transition={{ delay: 0.1, duration: 0.6 }}
+            className="mx-auto mt-6 max-w-2xl"
           >
-            <form onSubmit={handleSearchSubmit} className="flex items-center rounded-full bg-white px-6 py-4 shadow-xl">
-              <Search size={22} className="text-slate-400" />
+            <form onSubmit={handleSearchSubmit} className="flex items-center rounded-full bg-white px-5 py-2.5 sm:py-3 shadow-md border border-gray-100">
+              <Search size={18} className="text-slate-400 shrink-0" />
               <input
                 type="text"
                 placeholder="Search your favourite dish..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="ml-4 w-full bg-transparent text-lg outline-none placeholder:text-slate-400"
+                className="ml-3 w-full bg-transparent text-sm sm:text-base outline-none placeholder:text-slate-400"
               />
               <button type="submit" className="hidden" />
             </form>
@@ -147,17 +140,17 @@ function Menu() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.4, duration: 0.8 }}
-            className="mt-12 flex flex-wrap justify-center gap-4"
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="mt-6 flex flex-wrap justify-center gap-2 sm:gap-3"
           >
             {categories.map((category) => (
               <button
                 key={category}
                 onClick={() => setActiveCategory(category)}
-                className={`rounded-full px-7 py-3 text-base font-semibold transition-all duration-300 cursor-pointer ${
+                className={`rounded-full px-4 py-2 sm:px-6 sm:py-2.5 text-xs sm:text-sm font-bold transition-all duration-300 cursor-pointer border border-transparent ${
                   activeCategory === category
-                    ? "bg-[#ff9248] text-white shadow-lg"
-                    : "bg-white text-[#013e37] shadow hover:bg-[#013e37] hover:text-white"
+                    ? "bg-[#ff9248] text-white shadow-md"
+                    : "bg-white text-[#013e37] shadow-sm border-gray-100 hover:bg-[#013e37] hover:text-white"
                 }`}
               >
                 {category}
@@ -168,13 +161,13 @@ function Menu() {
       </section>
 
       {/* ================= MENU GRID START ================= */}
-      <section className="section-space py-16">
+      <section className="section-space py-8 sm:py-10">
         <div className="section">
           {/* Subfilters bar */}
-          <div className="mb-12 flex flex-col lg:flex-row gap-6 justify-between items-start lg:items-center">
+          <div className="mb-6 flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
             <div>
-              <h2 className="text-4xl font-bold text-[#013e37]">Popular Dishes</h2>
-              <p className="mt-3 text-slate-600">Showing {items.length} delicious items</p>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#013e37]">Popular Dishes</h2>
+              <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">Showing {items.length} delicious items</p>
             </div>
 
             {/* Premium tag filters */}
@@ -238,7 +231,7 @@ function Menu() {
               </button>
             </motion.div>
           ) : (
-            <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {items.map((item, index) => (
                 <motion.div
                   key={item._id}
@@ -246,7 +239,8 @@ function Menu() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.4, delay: index * 0.05 }}
-                  className="group overflow-hidden rounded-[28px] bg-white shadow-md border border-gray-100 transition-all duration-300 hover:-translate-y-3 hover:shadow-2xl flex flex-col justify-between"
+                  className="group overflow-hidden rounded-2xl bg-white shadow-md border border-gray-100 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl flex flex-col justify-between cursor-pointer"
+                  onClick={() => navigate(`/product/${item._id}`)}
                 >
                   <div className="relative overflow-hidden aspect-[4/3] bg-gray-100">
                     <img
@@ -278,13 +272,13 @@ function Menu() {
                     </div>
                   </div>
 
-                  <div className="p-6 flex-grow flex flex-col justify-between">
+                  <div className="p-4 sm:p-5 flex-grow flex flex-col justify-between">
                     <div>
                       <div className="flex items-center justify-between text-xs text-slate-400 font-semibold mb-2">
                         <span className="text-[#ff9248]">{item.category}</span>
                         <span>Premium</span>
                       </div>
-                      <h3 className="text-xl font-bold text-[#013e37] leading-tight mb-2 group-hover:text-[#ff9248] transition">
+                      <h3 className="text-lg font-extrabold text-[#013e37] leading-tight mb-2 group-hover:text-[#ff9248] transition">
                         {item.name}
                       </h3>
                       <p className="text-gray-500 text-xs leading-relaxed line-clamp-3">
@@ -292,7 +286,7 @@ function Menu() {
                       </p>
                       {/* Weight Variant Pills */}
                       {item.variants && item.variants.length > 1 && (
-                        <div className="mt-4 flex flex-wrap gap-1.5">
+                        <div className="mt-2.5 flex flex-wrap gap-1.5">
                           {item.variants.map((v, vIdx) => {
                             const isSelected = (selectedVariants[item._id] || 0) === vIdx;
                             return (
@@ -316,8 +310,8 @@ function Menu() {
                       )}
                     </div>
 
-                    <div className="mt-6 pt-4 border-t border-gray-50 flex items-center justify-between">
-                      <span className="text-2xl font-extrabold text-[#013e37]">
+                    <div className="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between">
+                      <span className="text-xl font-extrabold text-[#013e37]">
                         ₹{item.variants && item.variants.length > 0
                           ? item.variants[selectedVariants[item._id] || 0].price
                           : item.price}
@@ -346,9 +340,9 @@ function Menu() {
                               ? item.variants[selectedVariants[item._id] || 0].stock <= 0
                               : !item.available
                           }
-                          className="flex items-center gap-1.5 px-5 py-2.5 bg-[#ff9248] text-white text-xs font-bold rounded-2xl hover:bg-[#ea5a00] active:scale-95 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg border-none whitespace-nowrap"
+                          className="flex items-center gap-1 px-4 py-2 bg-[#ff9248] text-white text-xs font-bold rounded-xl hover:bg-[#ea5a00] active:scale-95 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md border-none whitespace-nowrap"
                         >
-                          <ShoppingBag size={14} />
+                          <ShoppingBag size={12} />
                           {(item.variants && item.variants.length > 0
                             ? item.variants[selectedVariants[item._id] || 0].stock <= 0
                             : !item.available)

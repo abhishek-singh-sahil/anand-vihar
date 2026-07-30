@@ -32,6 +32,7 @@ import BlogDetail from "../pages/Blogs/BlogDetail";
 import PrivacyPolicy from "../pages/PrivacyPolicy/PrivacyPolicy";
 import Terms from "../pages/Terms/Terms";
 import FAQ from "../pages/FAQ/FAQ";
+import ProductDetail from "../pages/ProductDetail/ProductDetail";
 
 /* Admin Pages */
 import Dashboard from "../pages/admin/Dashboard/Dashboard";
@@ -46,6 +47,7 @@ import Settings from "../pages/admin/Settings/Settings";
 import PinCodes from "../pages/admin/PinCodes/PinCodes";
 import Coupons from "../pages/admin/Coupons/Coupons";
 import HomepageCMS from "../pages/admin/HomepageCMS/HomepageCMS";
+import Messages from "../pages/admin/Messages/Messages";
 
 // Protect route wrapper
 const ProtectedRoute = ({ children, adminOnly = false }) => {
@@ -117,6 +119,9 @@ function AppRoutes() {
           }
         />
         
+        {/* Product details page */}
+        <Route path="product/:id" element={<ProductDetail />} />
+
         {/* Footers pages */}
         <Route path="privacy-policy" element={<PrivacyPolicy />} />
         <Route path="terms-conditions" element={<Terms />} />
@@ -145,6 +150,7 @@ function AppRoutes() {
         <Route path="pincodes" element={<PinCodes />} />
         <Route path="coupons" element={<Coupons />} />
         <Route path="homepage-cms" element={<HomepageCMS />} />
+        <Route path="messages" element={<Messages />} />
       </Route>
 
       {/* ================= 404 ================= */}

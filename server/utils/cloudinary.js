@@ -1,84 +1,78 @@
-import { v2 as cloudinary } from "cloudinary";
+import fs from "fs";
+import path from "path";
 
-let isConfigured = false;
-
-// Configure Cloudinary dynamically when called to avoid ES Module dotenv import timing issues
-const configureCloudinary = () => {
-  if (isConfigured) return true;
-  
-  if (
-    process.env.CLOUDINARY_CLOUD_NAME &&
-    process.env.CLOUDINARY_CLOUD_NAME !== "dummy_cloudinary_cloud_name" &&
-    process.env.CLOUDINARY_CLOUD_NAME !== "your_cloudinary_name"
-  ) {
-    cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET,
-    });
-    isConfigured = true;
-    return true;
+// Helper to determine extension from buffer magic numbers
+const getExtension = (buffer, resourceType) => {
+  if (buffer && buffer.length > 4) {
+    // Check JPEG magic numbers: FF D8 FF
+    if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) return ".jpg";
+    // Check PNG: 89 50 4E 47
+    if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) return ".png";
+    // Check GIF: 47 49 46 38
+    if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38) return ".gif";
+    // Check WEBP: RIFF ... WEBP
+    if (buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46) return ".webp";
   }
-  return false;
+  return resourceType === "video" ? ".mp4" : ".jpg";
 };
 
 /**
- * Upload buffer to Cloudinary
+ * Upload buffer to local server storage
  * @param {Buffer} fileBuffer 
  * @param {string} folder 
  * @param {string} resourceType - image or video
  */
 export const uploadToCloudinary = (fileBuffer, folder = "anand_vihar", resourceType = "auto") => {
   return new Promise((resolve, reject) => {
-    const configured = configureCloudinary();
-
-    // If not configured, mock upload URL
-    if (!configured) {
-      console.warn("⚠️ Mocking Cloudinary upload due to missing configuration.");
-      const randomId = Math.random().toString(36).substring(7);
-      const ext = resourceType === "video" ? "mp4" : "jpg";
-      return resolve({
-        secure_url: `/assets/mock-uploads/${folder}/${randomId}.${ext}`,
-        public_id: `${folder}/${randomId}`,
-      });
-    }
-
-    const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder,
-        resource_type: resourceType,
-      },
-      (error, result) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve(result);
-        }
+    try {
+      const UPLOADS_DIR = path.join(process.cwd(), "uploads");
+      
+      // Ensure local uploads directory exists
+      if (!fs.existsSync(UPLOADS_DIR)) {
+        fs.mkdirSync(UPLOADS_DIR, { recursive: true });
       }
-    );
-    uploadStream.end(fileBuffer);
+
+      const ext = getExtension(fileBuffer, resourceType);
+      const randomId = Math.random().toString(36).substring(2, 10);
+      const filename = `${Date.now()}-${randomId}${ext}`;
+      const filePath = path.join(UPLOADS_DIR, filename);
+
+      // Write the file to disk
+      fs.writeFileSync(filePath, fileBuffer);
+
+      // Build the server file URL
+      const baseUrl = process.env.BASE_URL || "http://localhost:5000";
+      const secure_url = `${baseUrl}/uploads/${filename}`;
+
+      resolve({
+        secure_url,
+        public_id: filename
+      });
+    } catch (error) {
+      reject(error);
+    }
   });
 };
 
 /**
- * Delete asset from Cloudinary
+ * Delete asset from local server storage
  * @param {string} url 
  */
 export const deleteFromCloudinary = async (url) => {
   try {
-    if (!url || !url.includes("cloudinary.com")) return;
+    if (!url) return;
     
-    const configured = configureCloudinary();
-    if (!configured) return;
-    
-    // Extract public_id from url
+    // Extract filename from URL (gets the last part after the slash)
     const parts = url.split("/");
-    const filenameWithExt = parts.pop();
-    const folder = parts.pop(); // e.g. anand_vihar
-    const publicId = `${folder}/${filenameWithExt.split(".")[0]}`;
-    
-    await cloudinary.uploader.destroy(publicId);
+    const filename = parts.pop();
+    if (!filename) return;
+
+    const filePath = path.join(process.cwd(), "uploads", filename);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log(`Successfully deleted local file: ${filename}`);
+    }
   } catch (error) {
-    console.error("Cloudinary delete failed:", error);
+    console.error("Local file delete failed:", error);
   }
 };

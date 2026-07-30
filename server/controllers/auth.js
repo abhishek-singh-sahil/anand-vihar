@@ -17,6 +17,22 @@ const generateRefreshToken = (user) => {
 };
 
 const sendTokenResponse = async (user, statusCode, res) => {
+  // Check if user is blocked
+  if (user.isBlocked) {
+    if (user.blockedUntil && new Date() > new Date(user.blockedUntil)) {
+      // Unblock
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { isBlocked: false, blockedUntil: null }
+      });
+    } else {
+      const blockMsg = user.blockedUntil
+        ? `Your account has been temporarily blocked until ${new Date(user.blockedUntil).toLocaleString()}.`
+        : "Your account has been permanently blocked by the administrator.";
+      return res.status(403).json({ success: false, message: blockMsg });
+    }
+  }
+
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user);
 

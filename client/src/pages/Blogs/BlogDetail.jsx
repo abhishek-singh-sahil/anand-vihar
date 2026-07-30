@@ -47,7 +47,7 @@ function BlogDetail() {
     }
 
     try {
-      const res = await api.put(`/blogs/${blog._id}/like`);
+      const res = await api.put(`/blogs/${blog.id || blog._id}/like`);
       if (res.data.success) {
         setLikesCount(res.data.likesCount);
         setHasLiked(res.data.hasLiked);
@@ -63,7 +63,7 @@ function BlogDetail() {
     if (!commentText.trim()) return;
 
     try {
-      const res = await api.post(`/blogs/${blog._id}/comment`, { text: commentText });
+      const res = await api.post(`/blogs/${blog.id || blog._id}/comment`, { text: commentText });
       if (res.data.success) {
         setBlog(prev => ({ ...prev, comments: res.data.comments }));
         setCommentText("");
