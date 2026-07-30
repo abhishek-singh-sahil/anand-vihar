@@ -34,6 +34,57 @@ connectDB();
 
 const app = express();
 
+// Global URL rewriter middleware to dynamically upgrade local asset URLs to the hosting server's actual host name
+app.use((req, res, next) => {
+  const originalJson = res.json;
+  res.json = function (data) {
+    if (!data) return originalJson.call(this, data);
+    
+    try {
+      const stringified = JSON.stringify(data);
+      if (stringified && stringified.includes("/uploads/")) {
+        const protocol = req.headers["x-forwarded-proto"] || req.protocol;
+        const host = req.headers["x-forwarded-host"] || req.get("host");
+        const targetHost = `${protocol}://${host}`;
+        
+        const rewriteUrls = (obj) => {
+          if (!obj) return obj;
+          if (typeof obj === "string") {
+            if (obj.includes("http://localhost:5000/uploads/")) {
+              return obj.replace("http://localhost:5000/uploads/", `${targetHost}/uploads/`);
+            }
+            if (obj.startsWith("/uploads/")) {
+              return `${targetHost}${obj}`;
+            }
+            return obj;
+          }
+          if (Array.isArray(obj)) {
+            return obj.map(rewriteUrls);
+          }
+          if (typeof obj === "object" && obj !== null) {
+            const newObj = {};
+            for (const key in obj) {
+              if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                newObj[key] = rewriteUrls(obj[key]);
+              }
+            }
+            return newObj;
+          }
+          return obj;
+        };
+        
+        const rewritten = rewriteUrls(data);
+        return originalJson.call(this, rewritten);
+      }
+    } catch (e) {
+      console.error("URL rewriting middleware error:", e);
+    }
+    
+    return originalJson.call(this, data);
+  };
+  next();
+});
+
 /* -------------------------------------------------------------------------- */
 /*                                   SECURITY                                 */
 /* -------------------------------------------------------------------------- */

@@ -40,9 +40,8 @@ export const uploadToCloudinary = (fileBuffer, folder = "anand_vihar", resourceT
       // Write the file to disk
       fs.writeFileSync(filePath, fileBuffer);
 
-      // Build the server file URL
-      const baseUrl = process.env.BASE_URL || "http://localhost:5000";
-      const secure_url = `${baseUrl}/uploads/${filename}`;
+      // Save relative path to DB for clean, environment-independent entries
+      const secure_url = `/uploads/${filename}`;
 
       resolve({
         secure_url,
