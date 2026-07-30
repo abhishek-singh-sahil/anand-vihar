@@ -34,6 +34,9 @@ connectDB();
 
 const app = express();
 
+// Trust reverse proxy (e.g. Nginx) to detect HTTPS protocols correctly
+app.set("trust proxy", 1);
+
 // Global URL rewriter middleware to dynamically upgrade local asset URLs to the hosting server's actual host name
 app.use((req, res, next) => {
   const originalJson = res.json;
@@ -50,11 +53,10 @@ app.use((req, res, next) => {
         const rewriteUrls = (obj) => {
           if (!obj) return obj;
           if (typeof obj === "string") {
-            if (obj.includes("http://localhost:5000/uploads/")) {
-              return obj.replace("http://localhost:5000/uploads/", `${targetHost}/uploads/`);
-            }
-            if (obj.startsWith("/uploads/")) {
-              return `${targetHost}${obj}`;
+            const uploadsIndex = obj.indexOf("/uploads/");
+            if (uploadsIndex !== -1) {
+              const filenamePath = obj.substring(uploadsIndex); // Extract "/uploads/filename.ext"
+              return `${targetHost}${filenamePath}`; // Prepend correct protocol & host dynamically
             }
             return obj;
           }
