@@ -23,9 +23,9 @@ function Gallery() {
   const fetchGallery = async () => {
     setLoading(true);
     try {
-      let url = "/gallery";
+      let url = "/gallery?onlyGallery=true";
       if (selectedCategory) {
-        url += `?category=${selectedCategory}`;
+        url += `&category=${selectedCategory}`;
       }
       const res = await api.get(url);
       if (res.data.success) {

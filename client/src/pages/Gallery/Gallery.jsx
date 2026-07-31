@@ -22,7 +22,7 @@ function Gallery() {
   const fetchGallery = async () => {
     setLoading(true);
     try {
-      const response = await api.get(`/gallery?category=${category}`);
+      const response = await api.get(`/gallery?onlyGallery=true&category=${category}`);
       if (response.data.success) {
         setItems(response.data.items);
       }

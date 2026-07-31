@@ -6,7 +6,7 @@ import WhyChooseUs from "../../components/home/WhyChooseUs";
 import Stats from "../../components/home/Stats";
 import GalleryPreview from "../../components/home/GalleryPreview";
 import Testimonials from "../../components/home/Testimonials";
-import Newsletter from "../../components/home/Newsletter";
+import KalakandHistory from "../../components/home/KalakandHistory";
 import { useAuth } from "../../hooks/useAuth";
 
 function Home() {
@@ -26,7 +26,7 @@ function Home() {
 
       <Testimonials />
 
-      <Newsletter />
+      <KalakandHistory />
     </>
   );
 }

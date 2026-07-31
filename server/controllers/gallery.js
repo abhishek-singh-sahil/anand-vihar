@@ -3,59 +3,76 @@ import { uploadToCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js
 
 export const getGalleryItems = async (req, res, next) => {
   try {
-    const { category } = req.query;
+    const { category, onlyGallery } = req.query;
     const where = {};
     if (category && category !== "All") {
       where.category = category;
     }
 
-    const dbItems = await prisma.gallery.findMany({
-      where,
-      orderBy: { createdAt: "desc" }
-    });
+    let plainDbItems = [];
+    try {
+      const dbItems = await prisma.gallery.findMany({
+        where,
+        orderBy: { createdAt: "desc" }
+      });
+      plainDbItems = dbItems.map(item => ({
+        _id: item.id,
+        title: item.caption,
+        category: item.category,
+        type: "image",
+        url: item.image,
+        createdAt: item.createdAt
+      }));
+    } catch (err) {
+      console.error("Error fetching gallery table items:", err);
+    }
 
-    // Map fields so the frontend gets exactly what it expects
-    const plainDbItems = dbItems.map(item => ({
-      _id: item.id,
-      title: item.caption,
-      category: item.category,
-      type: "image",
-      url: item.image,
-      createdAt: item.createdAt
-    }));
+    if (onlyGallery === "true") {
+      return res.status(200).json({ success: true, items: plainDbItems });
+    }
 
-    // Fetch approved testimonials media as well
     const testimonialMedia = [];
-    const approvedReviews = await prisma.testimonial.findMany({
-      where: { status: "approved" }
-    });
-
-    approvedReviews.forEach(t => {
-      if (t.images && t.images.length > 0) {
-        t.images.forEach((imgUrl, idx) => {
+    try {
+      const approvedReviews = await prisma.testimonial.findMany({
+        where: { status: "approved" }
+      });
+      approvedReviews.forEach(t => {
+        if (t.images && Array.isArray(t.images)) {
+          t.images.forEach((imgUrl, idx) => {
+            if (imgUrl) {
+              testimonialMedia.push({
+                _id: `${t.id}_img_${idx}`,
+                title: `Review Photo - ${t.name}`,
+                category: "Sweets",
+                type: "image",
+                url: imgUrl,
+                createdAt: t.createdAt
+              });
+            }
+          });
+        }
+        if (t.video) {
           testimonialMedia.push({
-            _id: `${t.id}_img_${idx}`,
-            title: `Review Photo - ${t.name}`,
+            _id: `${t.id}_vid`,
+            title: `Review Video - ${t.name}`,
             category: "Sweets",
-            type: "image",
-            url: imgUrl,
+            type: "video",
+            url: t.video,
             createdAt: t.createdAt
           });
-        });
-      }
-      if (t.video) {
-        testimonialMedia.push({
-          _id: `${t.id}_vid`,
-          title: `Review Video - ${t.name}`,
-          category: "Sweets",
-          type: "video",
-          url: t.video,
-          createdAt: t.createdAt
-        });
-      }
-    });
+        }
+      });
+    } catch (err) {
+      console.error("Error fetching testimonials media:", err);
+    }
 
-    const mergedItems = [...plainDbItems, ...testimonialMedia];
+    const productMedia = [];
+    const mergedItems = [
+      ...plainDbItems,
+      ...testimonialMedia
+    ];
+    
+    // Sort all media items by newest first
     mergedItems.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     res.status(200).json({ success: true, items: mergedItems });
