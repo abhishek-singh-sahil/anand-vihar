@@ -114,10 +114,15 @@ app.use("/api", limiter);
 // 3. CORS Configuration
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://anand-vihar-restaurant.vercel.app",
-  "https://anand-vihar.vercel.app",
+
+  "http://anand-vihar.com",
   "https://anand-vihar.com",
-  "https://www.anand-vihar.com"
+
+  "http://www.anand-vihar.com",
+  "https://www.anand-vihar.com",
+
+  "https://anand-vihar.vercel.app",
+  "https://anand-vihar-restaurant.vercel.app",
 ];
 
 // app.use(
