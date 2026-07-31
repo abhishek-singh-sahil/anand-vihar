@@ -120,15 +120,39 @@ const allowedOrigins = [
   "https://www.anand-vihar.com"
 ];
 
+// app.use(
+//   cors({
+//     origin: function (origin, callback) {
+//       if (!origin) return callback(null, true);
+//       if (allowedOrigins.indexOf(origin) === -1) {
+//         const msg = "The CORS policy for this site does not allow access from the specified Origin.";
+//         return callback(new Error(msg), false);
+//       }
+//       return callback(null, true);
+//     },
+//     credentials: true,
+//   })
+// );
+
 app.use(
   cors({
     origin: function (origin, callback) {
+      console.log("Incoming Origin:", origin);
+
       if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) === -1) {
-        const msg = "The CORS policy for this site does not allow access from the specified Origin.";
-        return callback(new Error(msg), false);
+
+      if (!allowedOrigins.includes(origin)) {
+        console.log("❌ Blocked Origin:", origin);
+        return callback(
+          new Error(
+            `The CORS policy for this site does not allow access from Origin: ${origin}`
+          ),
+          false
+        );
       }
-      return callback(null, true);
+
+      console.log("✅ Allowed Origin:", origin);
+      callback(null, true);
     },
     credentials: true,
   })
