@@ -146,3 +146,15 @@ export const updateCoupon = async (req, res, next) => {
     next(error);
   }
 };
+
+// Public list coupons
+export const getPublicCoupons = async (req, res, next) => {
+  try {
+    const coupons = await prisma.coupon.findMany({
+      orderBy: { expiryDate: "desc" }
+    });
+    res.status(200).json({ success: true, coupons });
+  } catch (error) {
+    next(error);
+  }
+};

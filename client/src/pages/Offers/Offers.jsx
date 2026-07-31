@@ -1,645 +1,244 @@
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import {
-  Sparkles,
-  Gift,
-  ArrowRight,
-  CalendarDays,
-} from "lucide-react";
-
+import { Sparkles, ArrowRight, Copy, Check, Info } from "lucide-react";
 import { Link } from "react-router-dom";
-
+import { useAuth } from "../../hooks/useAuth";
+import { toast } from "react-hot-toast";
+import api from "../../services/api";
 import OfferHero from "../../assets/images/offers-banner.jpg";
-import Offer1 from "../../assets/images/offer1.jpg";
-import Offer2 from "../../assets/images/offer2.jpg";
-import Offer3 from "../../assets/images/offer3.jpg";
 
 function Offers() {
+  const { settings } = useAuth();
+  const [coupons, setCoupons] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [copiedCode, setCopiedCode] = useState("");
 
-  const offers = [
+  const freeDeliveryMinAmount = settings?.freeDeliveryMinAmount 
+    ? Number(settings.freeDeliveryMinAmount) 
+    : 500;
 
-    {
-      id:1,
-      title:"Diwali Special",
-      discount:"25% OFF",
-      description:"Celebrate festivals with our premium sweet boxes.",
-      image:Offer1,
-      color:"bg-[#ff9248]",
-    },
+  useEffect(() => {
+    const fetchCoupons = async () => {
+      try {
+        const res = await api.get("/coupons/public");
+        if (res.data.success) {
+          setCoupons(res.data.coupons || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch coupons:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCoupons();
+  }, []);
 
-    {
-      id:2,
-      title:"Family Combo",
-      discount:"₹999",
-      description:"Perfect dinner combo for 4 people.",
-      image:Offer2,
-      color:"bg-[#013e37]",
-    },
-
-    {
-      id:3,
-      title:"Buy 2 Get 1",
-      discount:"FREE",
-      description:"Applicable on selected sweet gift boxes.",
-      image:Offer3,
-      color:"bg-[#9a0002]",
-    },
-
-  ];
+  const handleCopy = (code) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    toast.success(`Coupon code "${code}" copied to clipboard!`);
+    setTimeout(() => setCopiedCode(""), 2000);
+  };
 
   return (
-
-    <main className="bg-[#FDFCFA]">
-
-      {/* ================= HERO ================= */}
-
-      <section className="relative overflow-hidden bg-[#FAF5EF]">
-
+    <main className="bg-[#FDFCFA] font-sans min-h-screen pb-16">
+      
+      {/* ================= HERO SECTION ================= */}
+      <section className="relative overflow-hidden bg-[#FAF5EF] py-12 md:py-20 px-4 sm:px-6">
         <div className="absolute -top-40 -left-40 h-[420px] w-[420px] rounded-full bg-[#ff9248]/10 blur-[140px]" />
-
         <div className="absolute right-0 bottom-0 h-[420px] w-[420px] rounded-full bg-[#013e37]/10 blur-[150px]" />
 
-        <div className="section py-24">
-
-          <div className="grid items-center gap-16 lg:grid-cols-2">
-
-            {/* LEFT */}
-
+        <div className="max-w-[1200px] mx-auto relative z-10">
+          <div className="grid items-center gap-12 lg:grid-cols-2">
+            
+            {/* LEFT CONTENT */}
             <motion.div
-
-              initial={{opacity:0,x:-60}}
-
-              animate={{opacity:1,x:0}}
-
-              transition={{duration:.8}}
-
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+              className="text-left"
             >
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#ff9248]/10 text-[#ff9248] text-xs font-bold uppercase tracking-wider mb-6">
+                <Sparkles size={12} />
+                <span>Exclusive Offers</span>
+              </div>
 
-              <span className="badge">
-
-                <Sparkles size={16}/>
-
-                Exclusive Offers
-
-              </span>
-
-              <h1 className="mt-8 text-5xl font-extrabold leading-tight text-[#013e37] md:text-6xl">
-
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight text-[#013e37] tracking-tight">
                 Save More With
-
-                <span className="text-[#ff9248]">
-
-                  {" "}Every Visit
-
-                </span>
-
+                <span className="text-[#ff9248]"> Every Order</span>
               </h1>
 
-              <p className="mt-8 max-w-xl text-lg leading-9 text-slate-600">
-
-                Discover exciting discounts, festival offers,
-                family combos and exclusive membership benefits
-                available only at Anand Vihar Restaurant & Sweet Shop.
-
+              <p className="mt-6 text-sm sm:text-base md:text-lg leading-relaxed text-slate-600 max-w-xl">
+                Discover exciting discount coupons and special saving benefits available only at Anand Vihar Sweet Shop. Apply active promo codes during checkout to enjoy delicious rewards.
               </p>
 
-              <div className="mt-10 flex flex-wrap gap-5">
-
+              <div className="mt-8">
                 <Link
                   to="/menu"
-                  className="btn btn-primary"
+                  className="inline-flex items-center gap-3 rounded-full bg-[#ff9248] hover:bg-[#ea5a00] px-8 py-3.5 sm:px-10 sm:py-4 text-sm sm:text-base font-bold text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 cursor-pointer no-underline"
                 >
-
-                  Explore Menu
-
-                  <ArrowRight size={18}/>
-
+                  Explore Sweets Menu
+                  <ArrowRight size={18} />
                 </Link>
-
-                <Link
-                  to="/reservation"
-                  className="btn btn-secondary"
-                >
-
-                  <CalendarDays size={18}/>
-
-                  Book Table
-
-                </Link>
-
               </div>
-
             </motion.div>
 
-            {/* RIGHT */}
-
+            {/* RIGHT IMAGE */}
             <motion.div
-
-              initial={{opacity:0,x:60}}
-
-              animate={{opacity:1,x:0}}
-
-              transition={{duration:.8}}
-
-              className="relative"
-
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6 }}
+              className="relative w-full"
             >
-
-              <div className="absolute inset-0 rounded-[40px] bg-[#ff9248]/10 blur-3xl"/>
-
-              <img
-
-                src={OfferHero}
-
-                alt="Offers"
-
-                className="relative rounded-[32px] shadow-large"
-
-              />
-
+              <div className="absolute inset-0 rounded-[32px] bg-[#ff9248]/10 blur-2xl" />
+              <div className="relative rounded-[32px] overflow-hidden border border-gray-100 shadow-xl h-[280px] sm:h-[360px] lg:h-[400px]">
+                <img
+                  src={OfferHero}
+                  alt="Exclusive Offers Banner"
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </motion.div>
 
           </div>
-
         </div>
-
       </section>
 
-      {/* ================= OFFERS ================= */}
-
-      <section className="section-space">
-
-        <div className="section">
-
-          <div className="text-center">
-
-            <span className="badge">
-
-              Today's Best Deals
-
-            </span>
-
-            <h2 className="mt-6 subtitle">
-
-              Special Offers Just For You
-
-            </h2>
-
+      {/* ================= MAIN CONTENT ================= */}
+      <section className="max-w-[1000px] mx-auto px-4 sm:px-6 mt-12 sm:mt-16 space-y-12">
+        
+        {/* 1. FREE DELIVERY BANNER */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="relative overflow-hidden rounded-[24px] bg-gradient-to-r from-[#013e37] to-[#045148] p-6 sm:p-8 text-white shadow-md flex flex-col sm:flex-row items-center justify-between gap-6"
+        >
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,146,72,0.12),transparent_50%)]" />
+          
+          <div className="relative z-10 flex items-center gap-4 text-left">
+            <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-white/10 text-white flex items-center justify-center shrink-0">
+              <Sparkles size={24} className="text-[#ff9248]" />
+            </div>
+            <div>
+              <h3 className="text-lg sm:text-xl text-stone-300 font-bold">Free Shipping Offer!</h3>
+              <p className="text-xs sm:text-sm text-white/80 mt-1">
+                Order sweets worth ₹{freeDeliveryMinAmount} or more to get free doorstep delivery.
+              </p>
+            </div>
           </div>
 
-          <div className="mt-16 grid gap-8 lg:grid-cols-3">
-
-            {offers.map((offer,index)=>(
-
-              <motion.div
-
-                key={offer.id}
-
-                initial={{opacity:0,y:40}}
-
-                whileInView={{opacity:1,y:0}}
-
-                viewport={{once:true}}
-
-                transition={{
-
-                  duration:.6,
-
-                  delay:index*.15
-
-                }}
-
-                className="group overflow-hidden rounded-[30px] bg-white shadow-large"
-
-              >
-
-                <div className="relative overflow-hidden">
-
-                  <img
-
-                    src={offer.image}
-
-                    alt={offer.title}
-
-                    className="h-64 w-full object-cover transition duration-500 group-hover:scale-110"
-
-                  />
-
-                  <div className={`absolute left-5 top-5 rounded-full ${offer.color} px-5 py-2 text-sm font-bold text-white`}>
-
-                    {offer.discount}
-
-                  </div>
-
-                </div>
-
-                <div className="p-8">
-
-                  <h3 className="text-3xl font-bold text-[#013e37]">
-
-                    {offer.title}
-
-                  </h3>
-
-                  <p className="mt-5">
-
-                    {offer.description}
-
-                  </p>
-
-                  <button className="mt-8 rounded-full bg-[#013e37] px-6 py-3 font-semibold text-white transition hover:bg-[#025347]">
-
-                    Claim Offer
-
-                  </button>
-
-                </div>
-
-              </motion.div>
-
-            ))}
-
-          </div>
-
-        </div>
-
-      </section>
-            {/* ================= COUPONS ================= */}
-
-      <section className="bg-[#FAF5EF] section-space">
-
-        <div className="section">
-
-          <div className="text-center">
-
-            <span className="badge">
-
-              <Gift size={16} />
-
-              Coupon Collection
-
+          <div className="relative z-10 shrink-0">
+            <span className="inline-block bg-[#ff9248] text-white text-xs sm:text-sm font-extrabold px-5 py-2.5 rounded-full shadow-md">
+              Above ₹{freeDeliveryMinAmount} Only
             </span>
+          </div>
+        </motion.div>
 
-            <h2 className="mt-6 subtitle">
-
-              Save Even More With Coupons
-
-            </h2>
-
-            <p className="description mx-auto mt-6">
-
-              Use these exclusive coupons while placing your order
-              and enjoy additional discounts on your favourite meals
-              and sweets.
-
+        {/* 2. COUPONS LIST */}
+        <div className="space-y-6">
+          <div className="border-b border-gray-100 pb-4">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#013e37]">Available Coupon Codes</h2>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              Tap any coupon code below to copy it directly to your clipboard.
             </p>
-
           </div>
 
-          <div className="mt-16 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-
-            {[
-              {
-                code: "WELCOME10",
-                title: "₹100 OFF",
-                desc: "Valid on first order above ₹999.",
-                color: "bg-[#ff9248]",
-              },
-              {
-                code: "FAMILY20",
-                title: "20% OFF",
-                desc: "Applicable on Family Combo Meals.",
-                color: "bg-[#013e37]",
-              },
-              {
-                code: "SWEET50",
-                title: "₹50 OFF",
-                desc: "On selected premium sweet boxes.",
-                color: "bg-[#9a0002]",
-              },
-            ].map((coupon, index) => (
-
-              <motion.div
-                key={coupon.code}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{
-                  duration: .5,
-                  delay: index * .1,
-                }}
-                className="relative overflow-hidden rounded-[30px] bg-white shadow-large"
-              >
-
-                <div className={`h-3 ${coupon.color}`}></div>
-
-                <div className="p-8">
-
-                  <span className="rounded-full bg-[#FFF4EB] px-4 py-2 text-sm font-bold text-[#ff9248]">
-
-                    {coupon.code}
-
-                  </span>
-
-                  <h3 className="mt-6 text-4xl font-bold text-[#013e37]">
-
-                    {coupon.title}
-
-                  </h3>
-
-                  <p className="mt-5">
-
-                    {coupon.desc}
-
-                  </p>
-
-                  <button className="mt-8 rounded-full border-2 border-[#013e37] px-6 py-3 font-semibold text-[#013e37] transition hover:bg-[#013e37] hover:text-white">
-
-                    Copy Coupon
-
-                  </button>
-
-                </div>
-
-              </motion.div>
-
-            ))}
-
-          </div>
-
-        </div>
-
-      </section>
-
-      {/* ================= MEMBERSHIP ================= */}
-
-      <section className="section-space">
-
-        <div className="section">
-
-          <div className="text-center">
-
-            <span className="badge">
-
-              Premium Membership
-
-            </span>
-
-            <h2 className="mt-6 subtitle">
-
-              Become A Gold Member
-
-            </h2>
-
-            <p className="description mx-auto mt-6">
-
-              Join our loyalty program and enjoy exclusive discounts,
-              birthday surprises, reward points and priority table
-              reservations.
-
-            </p>
-
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: .7 }}
-            className="mt-16 overflow-hidden rounded-[36px] bg-gradient-to-r from-[#013e37] to-[#045148] p-10 text-white shadow-large"
-          >
-
-            <div className="grid items-center gap-10 lg:grid-cols-2">
-
-              <div>
-
-                <span className="inline-flex rounded-full bg-white/10 px-5 py-2">
-
-                  Gold Membership
-
-                </span>
-
-                <h3 className="mt-8 text-5xl font-bold">
-
-                  Unlock Premium Benefits
-
-                </h3>
-
-                <p className="mt-8 max-w-xl text-lg leading-9 text-white/80">
-
-                  Earn reward points on every purchase,
-                  receive exclusive festival offers,
-                  complimentary birthday dessert,
-                  anniversary discounts and much more.
-
-                </p>
-
-              </div>
-
-              <div className="grid gap-5">
-
-                {[
-                  "5% Extra Discount",
-                  "Birthday Special Dessert",
-                  "Reward Points",
-                  "Priority Table Booking",
-                  "Exclusive Festival Coupons",
-                  "Members Only Deals",
-                ].map((benefit) => (
-
-                  <div
-                    key={benefit}
-                    className="rounded-2xl bg-white/10 px-6 py-5 backdrop-blur-md"
+          {loading ? (
+            <div className="text-center py-12 text-gray-500 font-semibold">Loading available offers...</div>
+          ) : coupons.length === 0 ? (
+            <div className="text-center py-12 text-gray-500 font-semibold border border-dashed border-gray-200 rounded-3xl bg-white p-8">
+              No coupon codes are currently active. Please check back later!
+            </div>
+          ) : (
+            <div className="grid gap-6 sm:grid-cols-2">
+              {coupons.map((coupon, index) => {
+                const isExpired = new Date() > new Date(coupon.expiryDate) || !coupon.active;
+                const isCopied = copiedCode === coupon.code;
+                
+                return (
+                  <motion.div
+                    key={coupon.id || index}
+                    initial={{ opacity: 0, y: 15 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: index * 0.05 }}
+                    onClick={() => !isExpired && handleCopy(coupon.code)}
+                    className={`
+                      relative p-6 rounded-3xl border text-left flex flex-col justify-between min-h-[160px] transition duration-300 bg-white
+                      ${isExpired 
+                        ? "border-gray-100 bg-gray-50/50 opacity-60 cursor-not-allowed select-none" 
+                        : "border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 cursor-pointer group"
+                      }
+                    `}
                   >
+                    <div>
+                      {/* Top Row: Discount Value & Status */}
+                      <div className="flex justify-between items-start mb-3">
+                        <span className="text-2xl sm:text-3xl font-extrabold text-[#013e37]">
+                          {coupon.discountType === "PERCENTAGE" 
+                            ? `${coupon.discountValue}% OFF` 
+                            : `₹${coupon.discountValue} OFF`
+                          }
+                        </span>
+                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
+                          isExpired 
+                            ? "bg-red-50 text-red-500" 
+                            : "bg-emerald-50 text-emerald-600"
+                        }`}>
+                          {isExpired ? "Expired" : "Active"}
+                        </span>
+                      </div>
 
-                    <span className="text-lg font-medium">
+                      {/* Minimum Order Hint */}
+                      <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed">
+                        Valid on orders above <span className="font-bold text-slate-700">₹{coupon.minOrderAmount || 0}</span>
+                      </p>
+                    </div>
 
-                      ✓ {benefit}
+                    {/* Bottom Row: Copy Code & Expiration */}
+                    <div className="mt-6 pt-4 border-t border-gray-50 flex items-center justify-between">
+                      {/* Code Block */}
+                      <div className="flex items-center gap-2">
+                        <span className={`font-mono text-sm sm:text-base font-bold tracking-wider px-3 py-1.5 rounded-lg border ${
+                          isExpired 
+                            ? "bg-gray-100 border-gray-200 text-gray-400" 
+                            : "bg-orange-50/50 border-orange-100 text-[#ff9248] group-hover:bg-[#ff9248] group-hover:text-white transition duration-300"
+                        }`}>
+                          {coupon.code}
+                        </span>
+                        {!isExpired && (
+                          <div className="text-gray-400 group-hover:text-[#ff9248] transition-colors">
+                            {isCopied ? <Check size={16} className="text-emerald-500 animate-bounce" /> : <Copy size={15} />}
+                          </div>
+                        )}
+                      </div>
 
-                    </span>
+                      {/* Expiry Date */}
+                      <span className="text-[10px] sm:text-xs text-gray-400 font-medium">
+                        Exp: {new Date(coupon.expiryDate).toLocaleDateString()}
+                      </span>
+                    </div>
 
-                  </div>
-
-                ))}
-
-              </div>
-
+                    {/* Tap to Copy Overlay hint */}
+                    {!isExpired && (
+                      <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-1 text-[10px] font-bold text-[#ff9248]">
+                        <Info size={10} />
+                        <span>Tap to copy</span>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
             </div>
-
-          </motion.div>
-
-        </div>
-
-      </section>
-            {/* ================= FESTIVAL HIGHLIGHTS ================= */}
-
-      <section className="bg-[#FAF5EF] section-space">
-
-        <div className="section">
-
-          <div className="text-center">
-
-            <span className="badge">
-
-              Festival Specials
-
-            </span>
-
-            <h2 className="mt-6 subtitle">
-
-              Celebrate Every Occasion With Anand Vihar
-
-            </h2>
-
-            <p className="description mx-auto mt-6">
-
-              Every festival deserves authentic sweets and delicious meals.
-              Enjoy exclusive seasonal collections prepared with love.
-
-            </p>
-
-          </div>
-
-          <div className="mt-16 grid gap-8 md:grid-cols-2 xl:grid-cols-4">
-
-            {[
-              {
-                title: "Diwali",
-                offer: "25% OFF",
-                color: "#ff9248",
-              },
-              {
-                title: "Holi",
-                offer: "Free Sweet Box",
-                color: "#013e37",
-              },
-              {
-                title: "Raksha Bandhan",
-                offer: "Special Gift Packs",
-                color: "#9a0002",
-              },
-              {
-                title: "Wedding Orders",
-                offer: "Bulk Discounts",
-                color: "#ff9248",
-              },
-            ].map((festival, index) => (
-
-              <motion.div
-                key={festival.title}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{
-                  duration: .5,
-                  delay: index * .1,
-                }}
-                className="card p-8 text-center"
-              >
-
-                <div
-                  className="mx-auto flex h-20 w-20 items-center justify-center rounded-full text-2xl font-bold text-white"
-                  style={{
-                    background: festival.color,
-                  }}
-                >
-
-                  🎉
-
-                </div>
-
-                <h3 className="mt-6 text-2xl font-bold">
-
-                  {festival.title}
-
-                </h3>
-
-                <p
-                  className="mt-4 text-lg font-semibold"
-                  style={{
-                    color: festival.color,
-                  }}
-                >
-
-                  {festival.offer}
-
-                </p>
-
-              </motion.div>
-
-            ))}
-
-          </div>
-
-        </div>
-
-      </section>
-
-      {/* ================= CTA ================= */}
-
-      <section className="pb-24">
-
-        <div className="section">
-
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: .7 }}
-            className="overflow-hidden rounded-[40px] bg-gradient-to-r from-[#013e37] to-[#045148] px-10 py-16 text-center text-white shadow-large md:px-16"
-          >
-
-            <span className="inline-flex rounded-full bg-white/10 px-6 py-2">
-
-              Limited Time Offers
-
-            </span>
-
-            <h2 className="mt-8 text-4xl text-stone-100 font-extrabold md:text-5xl">
-
-              Don't Miss Today's Best Deals
-
-            </h2>
-
-            <p className="mx-auto mt-8 max-w-3xl text-lg leading-9 text-white/80">
-
-              Whether you're planning a family dinner, ordering sweets for
-              a celebration, or booking a party, our exclusive offers help
-              you save more while enjoying the authentic taste of Anand Vihar.
-
-            </p>
-
-            <div className="mt-12 flex flex-col justify-center gap-5 sm:flex-row">
-
-              <Link
-                to="/menu"
-                className="rounded-full bg-[#ff9248] px-9 py-4 text-lg font-semibold transition hover:scale-105"
-              >
-
-                Order Now
-
-              </Link>
-
-              <Link
-                to="/reservation"
-                className="rounded-full border-2 border-white px-9 py-4 text-lg font-semibold transition hover:bg-white hover:text-[#013e37]"
-              >
-
-                Book A Table
-
-              </Link>
-
-            </div>
-
-          </motion.div>
-
+          )}
         </div>
 
       </section>
 
     </main>
-
   );
-
 }
 
 export default Offers;

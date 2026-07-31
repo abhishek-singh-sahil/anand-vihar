@@ -1,10 +1,12 @@
 import express from "express";
-import { validateCoupon, getCoupons, createCoupon, updateCoupon, deleteCoupon } from "../controllers/coupon.js";
+import { validateCoupon, getCoupons, createCoupon, updateCoupon, deleteCoupon, getPublicCoupons } from "../controllers/coupon.js";
 import { protect, adminOnly } from "../middleware/auth.js";
 import { sanitizeInput } from "../middleware/sanitize.js";
 
 const router = express.Router();
 
+// Public / Visitor routes (no authentication required)
+router.get("/public", getPublicCoupons);
 router.post("/validate", sanitizeInput, validateCoupon);
 
 // Admin-only routes
