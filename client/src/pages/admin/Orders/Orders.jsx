@@ -165,7 +165,7 @@ function Orders() {
                       <div key={item.id} className="py-2.5 flex items-center justify-between text-sm gap-2">
                         <div className="flex items-center gap-2">
                           <img src={item.image} alt={item.name} className="w-8 h-8 rounded-lg object-cover border" />
-                          <span className="font-bold text-gray-800">{item.name}</span>
+                          <span className="font-bold text-gray-800">{item.name} {item.weight && `(${item.weight})`}</span>
                           <span className="text-xs text-[#ff6b1a] font-extrabold">(x{item.quantity})</span>
                         </div>
                         <span className="font-bold text-gray-700">₹{item.price * item.quantity}</span>

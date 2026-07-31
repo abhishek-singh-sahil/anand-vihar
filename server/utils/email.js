@@ -318,7 +318,7 @@ export const sendOrderConfirmationEmail = async (email, order, items) => {
     items.forEach(item => {
       itemsHtml += `
         <tr>
-          <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.name}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.name}${item.weight ? ` (${item.weight})` : ""}</td>
           <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${item.quantity}</td>
           <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">₹${item.price}</td>
           <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">₹${item.price * item.quantity}</td>
@@ -382,7 +382,7 @@ export const sendOrderAlertEmail = async (order, items) => {
     items.forEach(item => {
       itemsHtml += `
         <tr>
-          <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.name}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.name}${item.weight ? ` (${item.weight})` : ""}</td>
           <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${item.quantity}</td>
         </tr>
       `;

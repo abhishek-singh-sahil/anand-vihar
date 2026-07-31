@@ -359,7 +359,7 @@ function Products() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Categories (select one or more) *</label>
-                  <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto bg-gray-50 rounded-xl p-3 border border-gray-200">
+                  <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto bg-gray-50 rounded-xl p-3 border border-gray-200">
                     {categories.map((c) => {
                       const catId = c.id || c._id;
                       const checked = selectedCategoryIds.includes(catId);
