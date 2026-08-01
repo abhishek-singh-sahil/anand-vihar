@@ -55,6 +55,15 @@ function VerifyOtp() {
           <p className="mt-2 text-sm text-gray-500">
             We have sent a 6-digit verification code to <span className="font-semibold text-[#013e37]">{email || "your email"}</span>
           </p>
+
+          <motion.div
+            animate={{ opacity: [1, 0.4, 1] }}
+            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-50 border border-orange-200 text-[#ff9248] text-xs font-bold mt-4"
+          >
+            <span className="w-2 h-2 rounded-full bg-[#ff9248] animate-ping shrink-0" />
+            Please check the spam folder also
+          </motion.div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

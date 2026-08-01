@@ -150,10 +150,24 @@ function Footer() {
 
       {/* Bottom */}
       <div className="border-t border-white/10">
-        <div className="section py-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-gray-400 text-center md:text-left">
-            © {new Date().getFullYear()} Anand Vihar Sweet Shop & Confectionery. All Rights Reserved.
-          </p>
+        <div className="section py-6 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
+          <div className="space-y-1">
+            <p className="text-xs text-gray-400">
+              © {new Date().getFullYear()} Anand Vihar Sweet Shop & Confectionery. All Rights Reserved.
+            </p>
+            <p className="text-[11px] text-gray-400">
+              Website developed and managed by{" "}
+              <a
+                href="https://www.linkedin.com/in/abhishek-singh-sahil-37b310299/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[#ff9248] text-gray-300 font-semibold underline decoration-dotted transition cursor-pointer"
+              >
+                Abhishek singh sahil
+              </a>
+              . ph no: +91 6204635073
+            </p>
+          </div>
           <div className="flex gap-6 text-xs text-gray-400">
             <Link to="/privacy-policy" className="hover:text-[#ff9248] transition">Privacy Policy</Link>
             <Link to="/terms-conditions" className="hover:text-[#ff9248] transition">Terms & Conditions</Link>
