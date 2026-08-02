@@ -34,7 +34,9 @@ function Settings() {
     freeDeliveryMinAmount: "",
     orderingEnabled: true,
     reservationsEnabled: false,
-    deliverySlots: ""
+    deliverySlots: "",
+    homeNotificationText: "",
+    homeNotificationEnabled: false
   });
   const [bizLoading, setBizLoading] = useState(false);
 
@@ -50,7 +52,9 @@ function Settings() {
         freeDeliveryMinAmount: settings.freeDeliveryMinAmount || "",
         orderingEnabled: settings.orderingEnabled !== false,
         reservationsEnabled: settings.reservationsEnabled === true,
-        deliverySlots: settings.deliverySlots || ""
+        deliverySlots: settings.deliverySlots || "",
+        homeNotificationText: settings.homeNotificationText || "",
+        homeNotificationEnabled: settings.homeNotificationEnabled === true
       });
     }
   }, [settings]);
@@ -224,6 +228,39 @@ function Settings() {
                 }`} />
               </button>
             </div>
+          </div>
+
+          {/* Homepage Announcement/Notification Banner */}
+          <div className="border-t border-gray-100 pt-6 space-y-4">
+            <h4 className="font-extrabold text-[#013e37] text-sm uppercase tracking-wider">Announcement / Announcement Banner Settings</h4>
+            
+            <div className="flex items-center justify-between rounded-2xl border border-gray-100 p-4 bg-gray-50">
+              <div>
+                <p className="font-bold text-gray-800 text-sm">Enable Announcement Banner</p>
+                <p className="text-xs text-gray-400 mt-0.5">Toggle display of the notification block below the homepage hero banner</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setBizForm({ ...bizForm, homeNotificationEnabled: !bizForm.homeNotificationEnabled })}
+                className={`w-12 h-6 rounded-full transition-all relative cursor-pointer border-none ${
+                  bizForm.homeNotificationEnabled ? "bg-[#ff9248]" : "bg-gray-300"
+                }`}
+              >
+                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                  bizForm.homeNotificationEnabled ? "translate-x-6" : ""
+                }`} />
+              </button>
+            </div>
+
+            <Field label="Announcement Text" hint="The message or alert displayed to customers (will disappear if empty)">
+              <textarea
+                rows={2}
+                value={bizForm.homeNotificationText}
+                onChange={(e) => setBizForm({ ...bizForm, homeNotificationText: e.target.value })}
+                placeholder="Important Announcement: Enjoy free delivery on all orders above ₹499 this festive season! 🎉"
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-[#ff9248] font-sans"
+              />
+            </Field>
           </div>
 
           <button

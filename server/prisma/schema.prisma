@@ -365,3 +365,62 @@ model Banner {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
+
+model GoogleReviewsSettings {
+  id                String    @id @default("settings")
+  enabled           Boolean   @default(true)
+  googleAccountId   String    @default("")
+  googleLocationId  String    @default("")
+  googlePlaceId     String    @default("")
+  googleMapsUrl     String    @default("")
+  googleReviewUrl   String    @default("")
+  syncInterval      Int       @default(24) // in hours
+  limitCount        Int       @default(6) // Maximum Displayed Reviews
+  showPhoto         Boolean   @default(true)
+  showDate          Boolean   @default(true)
+  showRating        Boolean   @default(true)
+  showOverallRating Boolean   @default(true)
+  showTotalReviews  Boolean   @default(true)
+  enableWriteBtn    Boolean   @default(true)
+  enableViewAllBtn  Boolean   @default(true)
+  averageRating     Float     @default(0.0)
+  totalReviews      Int       @default(0)
+  lastSyncedAt      DateTime?
+  accessToken       String    @default("")
+  refreshToken      String    @default("")
+  tokenExpiry       DateTime?
+  businessName      String    @default("")
+  isConnected       Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model GoogleReview {
+  id                 String    @id @default(uuid())
+  reviewId           String    @unique
+  reviewerName       String
+  reviewerPhoto      String    @default("")
+  reviewerProfileUrl String    @default("")
+  rating             Int
+  reviewText         String
+  reviewDate         DateTime
+  updatedDate        DateTime?
+  language           String    @default("en")
+  isVisible          Boolean   @default(true)
+  isFeatured         Boolean   @default(false)
+  displayOrder       Int       @default(0)
+  syncedAt           DateTime  @default(now())
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model YoutubeVideo {
+  id           String   @id @default(uuid())
+  title        String
+  videoUrl     String
+  videoId      String
+  description  String   @default("")
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

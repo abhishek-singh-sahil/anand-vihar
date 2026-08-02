@@ -320,15 +320,10 @@ function Menu() {
                         <button
                           onClick={async (e) => {
                             e.stopPropagation();
-                            if (!isAuthenticated) {
-                              toast.error("Please login to buy sweets!");
-                              navigate("/login");
-                              return;
-                            }
-                            const activeVar = item.variants && item.variants.length > 0
+                             const activeVar = item.variants && item.variants.length > 0
                               ? item.variants[selectedVariants[item._id] || 0]
                               : null;
-                            const success = await addToCart(item._id, 1, activeVar?.id);
+                             const success = await addToCart(item._id, 1, activeVar?.id);
                             if (success) {
                               toast.success(`Added ${item.name} (${activeVar?.weight || ""}) to cart!`);
                             } else {
@@ -340,9 +335,9 @@ function Menu() {
                               ? item.variants[selectedVariants[item._id] || 0].stock <= 0
                               : !item.available
                           }
-                          className="flex items-center gap-1 px-4 py-2 bg-[#ff9248] text-white text-xs font-bold rounded-xl hover:bg-[#ea5a00] active:scale-95 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md border-none whitespace-nowrap"
+                          className="flex items-center gap-1.5 px-4 py-2.5 bg-[#ff9248] text-white text-sm font-bold rounded-xl hover:bg-[#ea5a00] active:scale-95 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md border-none whitespace-nowrap"
                         >
-                          <ShoppingBag size={12} />
+                          <ShoppingBag size={14} />
                           {(item.variants && item.variants.length > 0
                             ? item.variants[selectedVariants[item._id] || 0].stock <= 0
                             : !item.available)

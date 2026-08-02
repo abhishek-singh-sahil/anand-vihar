@@ -1,15 +1,76 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { toast } from "react-hot-toast";
 import { motion } from "framer-motion";
+import { FaGoogle } from "react-icons/fa";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+
+  const handleGoogleSuccess = async (credential) => {
+    setLoading(true);
+    try {
+      const res = await loginWithGoogle(credential);
+      if (res.success) {
+        toast.success("Welcome back! Logged in with Google.");
+        const redirectUrl = localStorage.getItem("redirectAfterLogin") || "/";
+        localStorage.removeItem("redirectAfterLogin");
+        navigate(redirectUrl);
+      }
+    } catch (error) {
+      toast.error(error.message || "Google login failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    /* global google */
+    if (window.google) {
+      google.accounts.id.initialize({
+        client_id: "542385150912-q28n20b411o6cclbe514u3u4a18t1j4k.apps.googleusercontent.com",
+        callback: (res) => handleGoogleSuccess(res.credential)
+      });
+      google.accounts.id.renderButton(
+        document.getElementById("googleBtn"),
+        { theme: "outline", size: "large", width: "100%", text: "signin_with" }
+      );
+    }
+  }, []);
+
+  const handleEasyGoogleLogin = async () => {
+    const emailInput = prompt("Enter your Google Account email to easily log in:");
+    if (!emailInput) return;
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailInput)) {
+      return toast.error("Please enter a valid email address.");
+    }
+
+    setLoading(true);
+    try {
+      const res = await loginWithGoogle(null, {
+        email: emailInput,
+        name: emailInput.split("@")[0],
+        picture: ""
+      });
+      if (res.success) {
+        toast.success("Welcome back! Logged in with Google successfully.");
+        const redirectUrl = localStorage.getItem("redirectAfterLogin") || "/";
+        localStorage.removeItem("redirectAfterLogin");
+        navigate(redirectUrl);
+      }
+    } catch (error) {
+      toast.error(error.message || "Google login failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,11 +83,12 @@ function Login() {
       const res = await login(email, password);
       if (res.success) {
         toast.success("Welcome back!");
-        // Redirect to admin dashboard if admin, else home page
         if (res.user?.role === "admin") {
           navigate("/admin/dashboard");
         } else {
-          navigate("/");
+          const redirectUrl = localStorage.getItem("redirectAfterLogin") || "/";
+          localStorage.removeItem("redirectAfterLogin");
+          navigate(redirectUrl);
         }
       }
     } catch (error) {
@@ -103,6 +165,19 @@ function Login() {
             {loading ? "Signing In..." : "Sign In"}
           </button>
         </form>
+
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-100"></div>
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-white px-2 text-gray-400 font-bold">Or</span>
+          </div>
+        </div>
+
+        <div className="w-full flex justify-center">
+          <div id="googleBtn" className="w-full"></div>
+        </div>
 
         <div className="text-center mt-6">
           <p className="text-sm text-gray-500">

@@ -26,6 +26,8 @@ import pinCodeZoneRoutes from "./routes/pinCodeZone.js";
 import offerRoutes from "./routes/offer.js";
 import questionRoutes from "./routes/question.js";
 import bannerRoutes from "./routes/banner.js";
+import youtubeRoutes from "./routes/youtube.js";
+import { startScheduler } from "./services/googleReviewService.js";
 
 dotenv.config();
 
@@ -203,6 +205,7 @@ app.use("/api/banners", bannerRoutes);
 app.use("/api/pincodes", pinCodeZoneRoutes);
 app.use("/api/offers", offerRoutes);
 app.use("/api/questions", questionRoutes);
+app.use("/api/videos", youtubeRoutes);
 
 /* -------------------------------------------------------------------------- */
 /*                                404 HANDLER                                 */
@@ -237,4 +240,5 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running in ${process.env.NODE_ENV || "development"} mode on http://localhost:${PORT}`);
+  startScheduler();
 });

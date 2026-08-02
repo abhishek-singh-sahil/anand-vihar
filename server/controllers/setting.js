@@ -21,6 +21,8 @@ export const getSettings = async (req, res, next) => {
     if (settingsObj.orderingEnabled === undefined) settingsObj.orderingEnabled = true; // default on for e-commerce
     if (settingsObj.whatsappNumber === undefined) settingsObj.whatsappNumber = "+919934190109";
     if (settingsObj.shopName === undefined) settingsObj.shopName = "Anand Vihar Sweet Shop";
+    if (settingsObj.homeNotificationText === undefined) settingsObj.homeNotificationText = "";
+    if (settingsObj.homeNotificationEnabled === undefined) settingsObj.homeNotificationEnabled = false;
 
     return res.status(200).json({
       success: true,

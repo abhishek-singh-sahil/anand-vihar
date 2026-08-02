@@ -11,7 +11,8 @@ export const CartProvider = ({ children }) => {
 
   const fetchCart = async () => {
     if (!isAuthenticated) {
-      setCart([]);
+      const guestCart = JSON.parse(localStorage.getItem("guest_cart") || "[]");
+      setCart(guestCart);
       return;
     }
     try {
@@ -28,11 +29,87 @@ export const CartProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    fetchCart();
+    const mergeCart = async () => {
+      if (isAuthenticated) {
+        setLoading(true);
+        const guestCart = JSON.parse(localStorage.getItem("guest_cart") || "[]");
+        if (guestCart.length > 0) {
+          for (const item of guestCart) {
+            try {
+              await api.post("/cart", {
+                productId: item.productId,
+                quantity: item.quantity,
+                variantId: item.variantId
+              });
+            } catch (err) {
+              console.error("Error merging item:", err);
+            }
+          }
+          localStorage.removeItem("guest_cart");
+        }
+        await fetchCart();
+      } else {
+        const guestCart = JSON.parse(localStorage.getItem("guest_cart") || "[]");
+        setCart(guestCart);
+      }
+    };
+    mergeCart();
   }, [isAuthenticated]);
 
   const addToCart = async (productId, quantity = 1, variantId = null) => {
-    if (!isAuthenticated) return false;
+    if (!isAuthenticated) {
+      try {
+        setLoading(true);
+        const res = await api.get(`/menu/items/${productId}`);
+        if (!res.data?.success || !res.data.product) {
+          return false;
+        }
+        
+        const product = res.data.product;
+        const selectedVariant = variantId 
+          ? product.variants.find(v => v.id === variantId)
+          : product.variants[0];
+
+        const guestCart = JSON.parse(localStorage.getItem("guest_cart") || "[]");
+        
+        const existingItemIndex = guestCart.findIndex(
+          item => item.productId === productId && item.variantId === (selectedVariant?.id || null)
+        );
+
+        if (existingItemIndex > -1) {
+          guestCart[existingItemIndex].quantity += quantity;
+        } else {
+          const newCartItem = {
+            id: `guest_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            productId,
+            quantity,
+            variantId: selectedVariant?.id || null,
+            price: selectedVariant?.price || product.price || 0,
+            discount: selectedVariant?.discount || product.discount || 0,
+            weight: selectedVariant?.weight || product.weight || "",
+            product: {
+              id: product.id,
+              _id: product.id,
+              name: product.name,
+              image: product.image,
+              categories: product.categories.map(c => c.name || c),
+              variants: product.variants
+            }
+          };
+          guestCart.push(newCartItem);
+        }
+
+        localStorage.setItem("guest_cart", JSON.stringify(guestCart));
+        setCart(guestCart);
+        return true;
+      } catch (err) {
+        console.error("Add to guest cart error:", err);
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    }
+
     try {
       const res = await api.post("/cart", { productId, quantity, variantId });
       if (res.data?.success) {
@@ -46,6 +123,16 @@ export const CartProvider = ({ children }) => {
   };
 
   const updateQuantity = async (id, quantity) => {
+    if (!isAuthenticated) {
+      const guestCart = JSON.parse(localStorage.getItem("guest_cart") || "[]");
+      const item = guestCart.find(item => item.id === id);
+      if (item) {
+        item.quantity = quantity;
+        localStorage.setItem("guest_cart", JSON.stringify(guestCart));
+        setCart(guestCart);
+      }
+      return;
+    }
     try {
       const res = await api.put(`/cart/${id}`, { quantity });
       if (res.data?.success) {
@@ -57,6 +144,23 @@ export const CartProvider = ({ children }) => {
   };
 
   const updateCartItemVariant = async (id, variantId) => {
+    if (!isAuthenticated) {
+      const guestCart = JSON.parse(localStorage.getItem("guest_cart") || "[]");
+      const item = guestCart.find(item => item.id === id);
+      if (item) {
+        const newVariant = item.product.variants.find(v => v.id === variantId);
+        if (newVariant) {
+          item.variantId = variantId;
+          item.price = newVariant.price;
+          item.discount = newVariant.discount || 0;
+          item.weight = newVariant.weight || "";
+          localStorage.setItem("guest_cart", JSON.stringify(guestCart));
+          setCart(guestCart);
+          return true;
+        }
+      }
+      return false;
+    }
     try {
       const res = await api.put(`/cart/${id}`, { variantId });
       if (res.data?.success) {
@@ -70,6 +174,13 @@ export const CartProvider = ({ children }) => {
   };
 
   const removeFromCart = async (id) => {
+    if (!isAuthenticated) {
+      const guestCart = JSON.parse(localStorage.getItem("guest_cart") || "[]");
+      const updatedCart = guestCart.filter(item => item.id !== id);
+      localStorage.setItem("guest_cart", JSON.stringify(updatedCart));
+      setCart(updatedCart);
+      return;
+    }
     try {
       const res = await api.delete(`/cart/${id}`);
       if (res.data?.success) {
@@ -81,6 +192,11 @@ export const CartProvider = ({ children }) => {
   };
 
   const clearCart = async () => {
+    if (!isAuthenticated) {
+      localStorage.removeItem("guest_cart");
+      setCart([]);
+      return;
+    }
     try {
       const res = await api.delete("/cart");
       if (res.data?.success) {

@@ -166,11 +166,6 @@ function FeaturedSweets() {
                         <button
                           onClick={async (e) => {
                             e.stopPropagation();
-                            if (!isAuthenticated) {
-                              toast.error("Please login to buy sweets!");
-                              navigate("/login");
-                              return;
-                            }
                             const success = await addToCart(item._id, 1);
                             if (success) {
                               toast.success(`Added ${item.name} to cart!`);
@@ -178,9 +173,9 @@ function FeaturedSweets() {
                               toast.error("Failed to add to cart.");
                             }
                           }}
-                          className="w-full py-2 bg-[#ff9248] hover:bg-[#ea5a00] active:scale-95 text-white text-[10px] font-bold rounded-xl flex items-center justify-center gap-1 transition shadow-sm border-none cursor-pointer"
+                          className="w-full py-2.5 bg-[#ff9248] hover:bg-[#ea5a00] active:scale-95 text-white text-sm font-bold rounded-xl flex items-center justify-center gap-1.5 transition shadow-sm border-none cursor-pointer"
                         >
-                          <ShoppingBag size={11} />
+                          <ShoppingBag size={13} />
                           Add to Cart
                         </button>
                       )}
@@ -250,11 +245,6 @@ function FeaturedSweets() {
                       <button
                         onClick={async (e) => {
                           e.stopPropagation();
-                          if (!isAuthenticated) {
-                            toast.error("Please login to buy sweets!");
-                            navigate("/login");
-                            return;
-                          }
                           const success = await addToCart(item._id, 1);
                           if (success) {
                             toast.success(`Added ${item.name} to cart!`);
@@ -262,10 +252,10 @@ function FeaturedSweets() {
                             toast.error("Failed to add to cart.");
                           }
                         }}
-                        className="w-full py-1.5 bg-[#ff9248] hover:bg-[#ea5a00] active:scale-95 text-white text-[9px] font-bold rounded-lg flex items-center justify-center gap-1 transition shadow-sm border-none cursor-pointer"
+                        className="w-full py-2 bg-[#ff9248] hover:bg-[#ea5a00] active:scale-95 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1 transition shadow-sm border-none cursor-pointer"
                       >
-                        <ShoppingBag size={10} />
-                        Add
+                        <ShoppingBag size={12} />
+                        Add to Cart
                       </button>
                     )}
                   </div>

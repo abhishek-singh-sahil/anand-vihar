@@ -28,7 +28,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
             color: "#fff",
             borderRadius: "14px",
             padding: "14px 18px",
-            fontSize: "15px",
+            fontSize: "1.1rem",
           },
           success: {
             iconTheme: {

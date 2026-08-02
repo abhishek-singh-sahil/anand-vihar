@@ -1,40 +1,33 @@
 import express from "express";
 import {
-  submitTestimonial,
-  getApprovedTestimonials,
-  likeTestimonial,
-  reactToTestimonial,
-  addCommentToTestimonial,
-  addReplyToComment,
-  incrementViewCount,
-  adminGetTestimonials,
-  adminCreateTestimonial,
-  adminUpdateTestimonial,
-  adminDeleteTestimonial,
-  adminBulkApprove,
-  adminBulkDelete,
+  getApprovedReviews,
+  getReviewsSettings,
+  adminGetReviews,
+  adminGetSettings,
+  adminUpdateSettings,
+  adminUpdateReview,
+  adminSyncNow,
+  adminGetGoogleOAuthUrl,
+  googleOAuthCallback,
+  adminDisconnectGoogle
 } from "../controllers/testimonial.js";
 import { protect, adminOnly } from "../middleware/auth.js";
-import { upload } from "../middleware/upload.js";
 import { sanitizeInput } from "../middleware/sanitize.js";
 
 const router = express.Router();
 
 // Public / Visitor routes (no authentication required)
-router.post("/", upload.array("media", 5), sanitizeInput, submitTestimonial);
-router.get("/approved", getApprovedTestimonials);
-router.put("/:id/view", incrementViewCount);
-router.put("/:id/like", sanitizeInput, likeTestimonial);
-router.put("/:id/react", sanitizeInput, reactToTestimonial);
-router.post("/:id/comment", sanitizeInput, addCommentToTestimonial);
-router.post("/:testimonialId/comment/:commentId/reply", sanitizeInput, addReplyToComment);
+router.get("/approved", getApprovedReviews);
+router.get("/settings", getReviewsSettings);
+router.get("/google/oauth/callback", googleOAuthCallback); // OAuth Redirect URI callback
 
 // Admin dashboard routes (admin access only)
-router.get("/", protect, adminOnly, adminGetTestimonials);
-router.post("/admin", protect, adminOnly, upload.array("media", 5), sanitizeInput, adminCreateTestimonial);
-router.put("/admin/:id", protect, adminOnly, upload.array("media", 5), sanitizeInput, adminUpdateTestimonial);
-router.delete("/admin/:id", protect, adminOnly, adminDeleteTestimonial);
-router.post("/bulk-approve", protect, adminOnly, adminBulkApprove);
-router.post("/bulk-delete", protect, adminOnly, adminBulkDelete);
+router.get("/admin", protect, adminOnly, adminGetReviews);
+router.get("/admin/settings", protect, adminOnly, adminGetSettings);
+router.put("/admin/settings", protect, adminOnly, sanitizeInput, adminUpdateSettings);
+router.put("/admin/reviews/:id", protect, adminOnly, sanitizeInput, adminUpdateReview);
+router.post("/admin/sync", protect, adminOnly, adminSyncNow);
+router.get("/admin/google/oauth/url", protect, adminOnly, adminGetGoogleOAuthUrl);
+router.post("/admin/google/oauth/disconnect", protect, adminOnly, adminDisconnectGoogle);
 
 export default router;

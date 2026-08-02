@@ -33,6 +33,7 @@ import PrivacyPolicy from "../pages/PrivacyPolicy/PrivacyPolicy";
 import Terms from "../pages/Terms/Terms";
 import FAQ from "../pages/FAQ/FAQ";
 import ProductDetail from "../pages/ProductDetail/ProductDetail";
+import Videos from "../pages/Videos/Videos";
 
 /* Admin Pages */
 import Dashboard from "../pages/admin/Dashboard/Dashboard";
@@ -48,6 +49,7 @@ import PinCodes from "../pages/admin/PinCodes/PinCodes";
 import Coupons from "../pages/admin/Coupons/Coupons";
 import HomepageCMS from "../pages/admin/HomepageCMS/HomepageCMS";
 import Messages from "../pages/admin/Messages/Messages";
+import VideosAdmin from "../pages/admin/Videos/Videos";
 
 // Protect route wrapper
 const ProtectedRoute = ({ children, adminOnly = false }) => {
@@ -121,6 +123,9 @@ function AppRoutes() {
         
         {/* Product details page */}
         <Route path="product/:id" element={<ProductDetail />} />
+        
+        {/* Videos gallery page */}
+        <Route path="videos" element={<Videos />} />
 
         {/* Footers pages */}
         <Route path="privacy-policy" element={<PrivacyPolicy />} />
@@ -143,7 +148,8 @@ function AppRoutes() {
         <Route path="categories" element={<Categories />} />
         <Route path="orders" element={<OrdersAdmin />} />
         <Route path="customers" element={<Customers />} />
-        <Route path="testimonials" element={<TestimonialsAdmin />} />
+         <Route path="testimonials" element={<TestimonialsAdmin />} />
+        <Route path="videos" element={<VideosAdmin />} />
         <Route path="blogs" element={<BlogsAdmin />} />
         <Route path="gallery" element={<GalleryAdmin />} />
         <Route path="settings" element={<Settings />} />

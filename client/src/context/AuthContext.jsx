@@ -84,6 +84,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginWithGoogle = async (credential, profile = null) => {
+    try {
+      const response = await api.post("/auth/google", { credential, profile });
+      if (response.data.success) {
+        localStorage.setItem("accessToken", response.data.accessToken);
+        setUser(response.data.user);
+        fetchSettings();
+      }
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: "Google Login failed" };
+    }
+  };
+
   const registerUser = async (userData) => {
     try {
       const response = await api.post("/auth/register", userData);
@@ -155,6 +169,7 @@ export const AuthProvider = ({ children }) => {
         isAdmin,
         settings,
         login,
+        loginWithGoogle,
         registerUser,
         verifyOtp,
         logoutUser,

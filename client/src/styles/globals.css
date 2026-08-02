@@ -2,7 +2,11 @@
    GOOGLE FONTS
 =========================================================== */
 
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap");
+
+*, *::before, *::after {
+    font-family: "Roboto", sans-serif !important;
+}
 
 @tailwind base;
 @tailwind components;
@@ -115,11 +119,13 @@ html{
 
     -webkit-text-size-adjust:100%;
 
+    font-size: 125% !important; /* Scale up global font size by 4px (from 16px to 20px) to assist low-eyesight users */
+
 }
 
 body{
 
-    font-family:"Inter",sans-serif;
+    font-family:"Roboto",sans-serif;
 
     background:var(--bg);
 
@@ -291,7 +297,7 @@ p{
 
     max-width:720px;
 
-    font-size:18px;
+    font-size:1.125rem;
 
     line-height:1.9;
 
@@ -980,7 +986,7 @@ textarea:focus-visible{
 
     .description{
 
-        font-size:16px;
+        font-size:1rem;
 
         line-height:1.8;
 

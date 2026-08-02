@@ -34,6 +34,7 @@ const Navbar = () => {
     { name: 'Home', link: '/' },
     { name: 'Menu', link: '/menu'},
     { name: 'Gallery', link: '/gallery' },
+    { name: 'Videos', link: '/videos' },
     { name: 'Testimonials', link: '/testimonials' },
     { name: 'Blogs', link: '/blogs' },
     { name: 'About', link: '/about' },
@@ -240,7 +241,10 @@ const Navbar = () => {
             ) : (
               <a 
                 href="/login"
-                onClick={handleLinkClick}
+                onClick={() => {
+                  localStorage.setItem("redirectAfterLogin", window.location.pathname + window.location.search);
+                  handleLinkClick();
+                }}
                 className='flex items-center gap-2 font-sans font-semibold text-gray-800 hover:text-[#ff6b1a] transition-colors text-[14px] xl:text-[15px] cursor-pointer'
               >
                 <FaUser size={14} className='text-gray-700' />
@@ -339,7 +343,10 @@ const Navbar = () => {
               ) : (
                 <a 
                   href="/login"
-                  onClick={handleLinkClick}
+                  onClick={() => {
+                    localStorage.setItem("redirectAfterLogin", window.location.pathname + window.location.search);
+                    handleLinkClick();
+                  }}
                   className='flex items-center justify-center gap-2 w-full py-3.5 border border-gray-200 rounded-xl font-semibold text-gray-800 hover:bg-gray-55 transition-colors text-center no-underline text-sm'
                 >
                   <FaUser size={13} />

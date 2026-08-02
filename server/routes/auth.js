@@ -3,6 +3,7 @@ import {
   register,
   verifyOtp,
   login,
+  googleLogin,
   logout,
   refresh,
   forgotPassword,
@@ -20,6 +21,7 @@ const router = express.Router();
 router.post("/register", sanitizeInput, register);
 router.post("/verify-otp", sanitizeInput, verifyOtp);
 router.post("/login", sanitizeInput, login);
+router.post("/google", sanitizeInput, googleLogin);
 router.post("/logout", logout);
 router.post("/refresh-token", refresh);
 router.post("/forgot-password", sanitizeInput, forgotPassword);

@@ -1,43 +1,19 @@
-import React, { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "react-hot-toast";
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Star } from "lucide-react";
 import api from "../../services/api";
-import { useAuth } from "../../hooks/useAuth";
 
 function Testimonials() {
-  const { user } = useAuth();
   const [testimonials, setTestimonials] = useState([]);
+  const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [sort, setSort] = useState("newest");
-  const [showSubmitForm, setShowSubmitForm] = useState(false);
-
-  // Form states
-  const [name, setName] = useState("");
-  const [city, setCity] = useState("");
-  const [phone, setPhone] = useState("");
-  const [rating, setRating] = useState(5);
-  const [review, setReview] = useState("");
-  const [images, setImages] = useState([]);
-  const [video, setVideo] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  // Visitor identifier (IP or local random uuid stored in localStorage to prevent double likes/reactions)
-  const [visitorId, setVisitorId] = useState("");
-
-  useEffect(() => {
-    let id = localStorage.getItem("testimonialVisitorId");
-    if (!id) {
-      id = "visitor_" + Math.random().toString(36).substring(2, 15);
-      localStorage.setItem("testimonialVisitorId", id);
-    }
-    setVisitorId(id);
-  }, []);
 
   const fetchTestimonials = async () => {
     try {
-      const response = await api.get(`/testimonials/approved?sort=${sort}`);
+      const response = await api.get("/testimonials/approved");
       if (response.data.success) {
-        setTestimonials(response.data.testimonials);
+        setTestimonials(response.data.testimonials || []);
+        setSettings(response.data.settings || null);
       }
     } catch (error) {
       console.error("Could not fetch testimonials:", error);
@@ -48,580 +24,199 @@ function Testimonials() {
 
   useEffect(() => {
     fetchTestimonials();
-  }, [sort]);
+  }, []);
 
-  const handleVideoChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center bg-[#FDFCFA]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ff9248]"></div>
+      </div>
+    );
+  }
 
-    // Verify format and size (30MB max)
-    if (file.size > 30 * 1024 * 1024) {
-      return toast.error("Video file is too large (max 30MB)");
-    }
+  // If globally disabled
+  if (settings && !settings.enabled) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center bg-[#FDFCFA] py-16 px-4">
+        <h2 className="text-2xl font-bold text-gray-700">Reviews Section Disabled</h2>
+        <p className="text-gray-500 mt-2 text-center">We currently do not have reviews visible on our page. Please check back later!</p>
+      </div>
+    );
+  }
 
-    // Client-side video duration validation (max 15 seconds)
-    const videoEl = document.createElement("video");
-    videoEl.preload = "metadata";
-    videoEl.src = URL.createObjectURL(file);
-    videoEl.onloadedmetadata = () => {
-      window.URL.revokeObjectURL(videoEl.src);
-      if (videoEl.duration > 15.5) {
-        toast.error("Video duration cannot exceed 15 seconds!");
-        setVideo(null);
-        e.target.value = "";
-      } else {
-        setVideo(file);
-      }
-    };
-  };
-
-  const handleImageChange = (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length > 5) {
-      toast.error("You can upload a maximum of 5 images");
-      return;
-    }
-    setImages(files);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!name || !city || !review || !rating) {
-      return toast.error("Please fill in all required fields");
-    }
-
-    setSubmitting(true);
-    const formData = new FormData();
-    formData.append("name", name);
-    formData.append("city", city);
-    formData.append("phone", phone);
-    formData.append("rating", rating);
-    formData.append("review", review);
-
-    images.forEach(img => {
-      formData.append("media", img);
-    });
-
-    if (video) {
-      formData.append("media", video);
-    }
-
-    try {
-      const response = await api.post("/testimonials", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      if (response.data.success) {
-        toast.success("Review submitted! It will appear once approved by admin.");
-        // Reset form
-        setName("");
-        setCity("");
-        setPhone("");
-        setRating(5);
-        setReview("");
-        setImages([]);
-        setVideo(null);
-        setShowSubmitForm(false);
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to submit review");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleLike = async (id) => {
-    try {
-      const response = await api.put(`/testimonials/${id}/like`, { identifier: visitorId });
-      if (response.data.success) {
-        setTestimonials(prev =>
-          prev.map(t => (t._id === id ? { ...t, likes: response.data.likes } : t))
-        );
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const handleReact = async (id, reactionType) => {
-    try {
-      const response = await api.put(`/testimonials/${id}/react`, {
-        reactionType,
-        identifier: visitorId,
-      });
-      if (response.data.success) {
-        setTestimonials(prev =>
-          prev.map(t => (t._id === id ? { ...t, emojiReactions: response.data.emojiReactions } : t))
-        );
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const handleIncrementView = async (id) => {
-    try {
-      await api.put(`/testimonials/${id}/view`);
-      // Update local state views count
-      setTestimonials(prev =>
-        prev.map(t => (t._id === id ? { ...t, viewCount: t.viewCount + 1 } : t))
-      );
-    } catch (error) {
-      console.error(error);
-    }
-  };
+  const showPhoto = settings ? settings.showPhoto : true;
+  const showDate = settings ? settings.showDate : true;
+  const showRating = settings ? settings.showRating : true;
 
   return (
-    <div className="max-w-[1200px] mx-auto py-12 px-6 bg-[#FDFCFA]">
+    <div className="min-h-screen bg-[#FDFCFA] pb-24 font-sans">
       {/* Header Banner */}
-      <div className="text-center mb-16">
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-[#013e37] font-sans mb-4">Guest Testimonials</h1>
-        <p className="text-lg text-gray-500 max-w-2xl mx-auto">
-          Hear from our beloved customers who have experienced the magic of Anand Vihar's sweets and traditional dining.
-        </p>
-
-        <div className="mt-8 flex flex-wrap gap-4 justify-center items-center">
-          <button
-            onClick={() => setShowSubmitForm(!showSubmitForm)}
-            className="px-6 py-3 bg-[#ff9248] hover:bg-[#ea5a00] text-white rounded-xl font-semibold transition-all shadow-md cursor-pointer"
+      <div className="bg-[#013e37] text-white py-16 sm:py-20 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full bg-[#ff9248]/10 blur-[120px] pointer-events-none" />
+        <div className="absolute -bottom-20 -left-10 w-[300px] h-[300px] rounded-full bg-white/5 blur-[80px] pointer-events-none" />
+        
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 relative z-10 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
           >
-            {showSubmitForm ? "Close Form" : "✍ Submit Your Testimonial"}
-          </button>
-
-          <div className="bg-white px-4 py-2 border border-gray-100 rounded-xl shadow-sm flex items-center gap-2">
-            <span className="text-sm font-semibold text-gray-500">Sort By:</span>
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-              className="text-sm font-bold text-gray-700 bg-transparent outline-none cursor-pointer border-none"
-            >
-              <option value="newest">Newest First</option>
-              <option value="trending">Trending & Popular</option>
-              <option value="highest">Highest Rated</option>
-              <option value="oldest">Oldest First</option>
-            </select>
-          </div>
+            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight">Customer Reviews</h1>
+            <p className="mt-4 text-sm sm:text-base text-gray-300 max-w-2xl mx-auto leading-relaxed">
+              Read real reviews from our customers synced directly from Google Business Profile. We take pride in delivering top-quality sweets and services.
+            </p>
+          </motion.div>
         </div>
       </div>
 
-      {/* Submission Form Dialog */}
-      <AnimatePresence>
-        {showSubmitForm && (
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 mt-12">
+        {/* Google Rating Summary Card */}
+        {settings && settings.showOverallRating && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden mb-12"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-6 mb-12 max-w-4xl mx-auto"
           >
-            <div className="bg-white p-8 rounded-3xl shadow-lg border border-gray-100 max-w-2xl mx-auto">
-              <h2 className="text-2xl font-bold text-[#013e37] mb-6">Write a Review</h2>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Your Name *</label>
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#ff9248] focus:border-transparent transition-all"
-                      placeholder="John Doe"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Your City *</label>
-                    <input
-                      type="text"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      required
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#ff9248] focus:border-transparent transition-all"
-                      placeholder="Jhumri Telaiya"
-                    />
-                  </div>
+            <div className="text-center md:text-left">
+              <h2 className="text-2xl font-extrabold text-[#013e37]">Google Rating Summary</h2>
+              <p className="text-sm text-gray-500 mt-1">Verified reviews directly from our Google business page</p>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row items-center gap-6">
+              <div className="text-center">
+                <span className="text-4xl sm:text-5xl font-black text-[#013e37] block">
+                  {settings.averageRating ? settings.averageRating.toFixed(1) : "5.0"}
+                </span>
+                <div className="flex text-yellow-400 justify-center mt-1">
+                  {Array.from({ length: Math.round(settings.averageRating || 5) }).map((_, i) => (
+                    <Star key={i} size={16} className="fill-yellow-400 text-yellow-400" />
+                  ))}
                 </div>
+                <span className="text-xs font-bold text-gray-400 mt-1 block">
+                  Out of 5 Stars
+                </span>
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Phone Number (Optional)</label>
-                    <input
-                      type="text"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#ff9248] focus:border-transparent transition-all"
-                      placeholder="+91 9876543210"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Rating *</label>
-                    <div className="flex gap-2.5 mt-2">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                          key={star}
-                          type="button"
-                          onClick={() => setRating(star)}
-                          className="text-2xl outline-none focus:outline-none"
-                        >
-                          {star <= rating ? "★" : "☆"}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+              {settings.showTotalReviews && (
+                <>
+                  <div className="w-[1px] h-12 bg-gray-100 hidden sm:block" />
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Review *</label>
-                  <textarea
-                    rows={4}
-                    value={review}
-                    onChange={(e) => setReview(e.target.value)}
-                    required
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#ff9248] focus:border-transparent transition-all"
-                    placeholder="Tell us about your experience..."
-                  ></textarea>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Upload Images (Max 5)</label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageChange}
-                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-[#ff9248] hover:file:bg-orange-100"
-                    />
+                  <div className="text-center sm:text-left">
+                    <span className="text-2xl sm:text-3xl font-extrabold text-[#013e37] block">
+                      {settings.totalReviews || "50+"}
+                    </span>
+                    <span className="text-xs font-bold text-gray-400 block mt-1">
+                      Total Google Reviews
+                    </span>
                   </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Upload Video (Max 15s limit) *</label>
-                    <input
-                      type="file"
-                      accept="video/*"
-                      onChange={handleVideoChange}
-                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-[#ff9248] hover:file:bg-orange-100"
-                    />
-                  </div>
-                </div>
+                </>
+              )}
+            </div>
 
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full py-4 bg-[#ff9248] hover:bg-[#ea5a00] text-white rounded-xl font-bold transition-all shadow-md cursor-pointer disabled:opacity-50"
+            {/* Header Action Buttons */}
+            <div className="flex flex-wrap gap-3 justify-center">
+              {settings.enableWriteBtn && settings.reviewUrl && (
+                <a
+                  href={settings.reviewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-3 bg-[#ff9248] hover:bg-[#ea5a00] active:scale-95 text-white font-bold rounded-xl text-xs sm:text-sm no-underline shadow-sm transition-all cursor-pointer"
                 >
-                  {submitting ? "Submitting..." : "Submit Review"}
-                </button>
-              </form>
+                  Write a Review
+                </a>
+              )}
+              {settings.enableViewAllBtn && (settings.mapUrl || settings.reviewUrl) && (
+                <a
+                  href={settings.mapUrl || settings.reviewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-3 border border-[#013e37] text-[#013e37] hover:bg-gray-55 active:scale-95 font-bold rounded-xl text-xs sm:text-sm no-underline transition-all cursor-pointer"
+                >
+                  View on Google
+                </a>
+              )}
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
 
-      {/* Testimonials List Grid */}
-      {loading ? (
-        <div className="text-center py-20 font-semibold text-gray-500">Loading customer stories...</div>
-      ) : testimonials.length === 0 ? (
-        <div className="text-center py-20 font-semibold text-gray-500">
-          No reviews visible. Be the first to write a review!
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {testimonials.map((t) => (
-            <TestimonialCard
-              key={t._id}
-              testimonial={t}
-              visitorId={visitorId}
-              onLike={handleLike}
-              onReact={handleReact}
-              onView={handleIncrementView}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Inner Card Component for detail rendering, comments, replies & sliders
-function TestimonialCard({ testimonial, visitorId, onLike, onReact, onView }) {
-  const [commentName, setCommentName] = useState("");
-  const [commentText, setCommentText] = useState("");
-  const [comments, setComments] = useState(testimonial.comments || []);
-  const [showComments, setShowComments] = useState(false);
-  const [replyText, setReplyText] = useState("");
-  const [replyToId, setReplyToId] = useState(null);
-  const [imageIndex, setImageIndex] = useState(0);
-
-  // Trigger view increment once on mount
-  useEffect(() => {
-    onView(testimonial._id);
-  }, []);
-
-  const handleAddComment = async (e) => {
-    e.preventDefault();
-    if (!commentName || !commentText) return;
-
-    try {
-      const res = await api.post(`/testimonials/${testimonial._id}/comment`, {
-        name: commentName,
-        text: commentText,
-      });
-      if (res.data.success) {
-        setComments(res.data.comments);
-        setCommentText("");
-        toast.success("Comment added!");
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const handleAddReply = async (commentId) => {
-    if (!commentName || !replyText) return;
-
-    try {
-      const res = await api.post(`/testimonials/${testimonial._id}/comment/${commentId}/reply`, {
-        name: commentName,
-        text: replyText,
-      });
-      if (res.data.success) {
-        setComments(res.data.comments);
-        setReplyText("");
-        setReplyToId(null);
-        toast.success("Reply added!");
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const handleShare = () => {
-    const text = `Read ${testimonial.name}'s review on Anand Vihar: "${testimonial.review}"`;
-    navigator.clipboard.writeText(text);
-    toast.success("Review copied to clipboard for sharing!");
-  };
-
-  const hasLiked = testimonial.likes.includes(visitorId);
-  const activeReaction = Object.keys(testimonial.emojiReactions || {}).find(key =>
-    testimonial.emojiReactions[key]?.includes(visitorId)
-  );
-
-  return (
-    <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col justify-between font-sans relative overflow-hidden">
-      {testimonial.isPinned && (
-        <span className="absolute top-4 right-4 bg-orange-100 text-[#ff9248] text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-          📌 Pinned
-        </span>
-      )}
-      
-      <div>
-        {/* Rating & User Profile */}
-        <div className="flex items-center gap-4 mb-6">
-          <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center font-bold text-xl text-[#ff9248]">
-            {testimonial.name.charAt(0)}
+        {/* Reviews Grid */}
+        {testimonials.length === 0 ? (
+          <div className="text-center py-16 bg-white rounded-3xl border border-gray-100 shadow-sm">
+            <p className="text-gray-500 font-medium">No cached reviews found. Check back later after a scheduled sync!</p>
           </div>
-          <div>
-            <h4 className="font-bold text-gray-800 leading-tight">{testimonial.name}</h4>
-            <p className="text-xs text-gray-500 font-medium">{testimonial.city}</p>
-          </div>
-          <div className="ml-auto flex text-yellow-400 text-sm">
-            {Array.from({ length: testimonial.rating }).map((_, i) => (
-              <span key={i}>★</span>
-            ))}
-          </div>
-        </div>
-
-        {/* Review Description */}
-        <p className="text-gray-600 leading-relaxed mb-6 font-sans">"{testimonial.review}"</p>
-
-        {/* Media Attachments */}
-        {testimonial.images && testimonial.images.length > 0 && (
-          <div className="relative mb-6 rounded-2xl overflow-hidden aspect-[4/3] bg-gray-100 border border-gray-50">
-            <img
-              src={testimonial.images[imageIndex]}
-              alt={`upload-${imageIndex}`}
-              className="w-full h-full object-cover"
-            />
-            {testimonial.images.length > 1 && (
-              <>
-                <button
-                  onClick={() => setImageIndex(prev => (prev === 0 ? testimonial.images.length - 1 : prev - 1))}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 hover:bg-white text-gray-800 shadow-md font-bold text-sm cursor-pointer flex items-center justify-center"
-                >
-                  &lt;
-                </button>
-                <button
-                  onClick={() => setImageIndex(prev => (prev === testimonial.images.length - 1 ? 0 : prev + 1))}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 hover:bg-white text-gray-800 shadow-md font-bold text-sm cursor-pointer flex items-center justify-center"
-                >
-                  &gt;
-                </button>
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                  {testimonial.images.map((_, idx) => (
-                    <span
-                      key={idx}
-                      className={`w-2 h-2 rounded-full ${imageIndex === idx ? "bg-[#ff9248]" : "bg-white/55"}`}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {testimonial.video && (
-          <div className="mb-6 rounded-2xl overflow-hidden aspect-video bg-black border border-gray-900">
-            <video src={testimonial.video} controls className="w-full h-full object-contain" />
-          </div>
-        )}
-      </div>
-
-      {/* Interactions Action Bar */}
-      <div>
-        <div className="flex flex-wrap gap-4 items-center py-4 border-t border-b border-gray-50 mb-4 text-xs font-semibold text-gray-500">
-          {/* Likes Toggle */}
-          <button
-            onClick={() => onLike(testimonial._id)}
-            className={`flex items-center gap-1.5 transition cursor-pointer py-1 px-2 rounded-lg ${
-              hasLiked ? "text-red-500 bg-red-50" : "hover:text-[#ff9248] hover:bg-orange-50/50"
-            }`}
-          >
-            <span>{hasLiked ? "❤️" : "🤍"}</span>
-            <span>{testimonial.likes?.length || 0} Likes</span>
-          </button>
-
-          {/* Emoji reactions picker */}
-          <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-xl">
-            {[
-              { type: "thumbsUp", emoji: "👍" },
-              { type: "heart", emoji: "💖" },
-              { type: "clap", emoji: "👏" },
-              { type: "laugh", emoji: "😂" },
-            ].map(rx => {
-              const count = testimonial.emojiReactions?.[rx.type]?.length || 0;
-              const hasReacted = testimonial.emojiReactions?.[rx.type]?.includes(visitorId);
+        ) : (
+          <div className="grid gap-6 md:gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {testimonials.map((item, index) => {
+              const hasAvatar = item.profilePic || (item.images && item.images.length > 0);
+              const avatarUrl = item.profilePic || (item.images && item.images[0]);
+              
               return (
-                <button
-                  key={rx.type}
-                  onClick={() => onReact(testimonial._id, rx.type)}
-                  className={`px-1.5 py-0.5 rounded transition hover:scale-115 flex items-center gap-0.5 cursor-pointer ${
-                    hasReacted ? "bg-orange-100" : ""
-                  }`}
-                  title={rx.type}
+                <motion.div
+                  key={item.id || index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm hover:shadow-md border border-gray-50 flex flex-col justify-between transition-all duration-200 min-h-[250px]"
                 >
-                  <span>{rx.emoji}</span>
-                  {count > 0 && <span className="text-[10px] text-gray-600">{count}</span>}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Views count */}
-          <span className="ml-auto text-[11px] font-medium text-gray-400">👁 {testimonial.viewCount || 0} Views</span>
-
-          {/* Share */}
-          <button onClick={handleShare} className="hover:text-[#ff9248] cursor-pointer" title="Copy Share Link">
-            🔗 Share
-          </button>
-        </div>
-
-        {/* Comment Expand Toggle */}
-        <button
-          onClick={() => setShowComments(!showComments)}
-          className="text-xs text-[#013e37] hover:text-[#ff9248] font-bold cursor-pointer mb-2 block"
-        >
-          {showComments ? "Collapse Comments" : `💬 View Comments (${comments.length})`}
-        </button>
-
-        {/* Comments section */}
-        {showComments && (
-          <div className="space-y-4 pt-2">
-            <div className="max-h-52 overflow-y-auto space-y-3 pr-2 scrollbar-thin">
-              {comments.map((c) => (
-                <div key={c._id} className="text-xs bg-gray-50 p-3 rounded-xl space-y-1">
-                  <div className="flex justify-between">
-                    <span className="font-bold text-gray-800">{c.name}</span>
-                    <span className="text-[10px] text-gray-400">
-                      {new Date(c.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <p className="text-gray-600">{c.text}</p>
-                  
-                  {/* Replies */}
-                  {c.replies && c.replies.length > 0 && (
-                    <div className="pl-4 mt-2 border-l border-orange-200 space-y-2">
-                      {c.replies.map((r, rIdx) => (
-                        <div key={rIdx} className="bg-white/60 p-2 rounded-lg">
-                          <div className="flex justify-between">
-                            <span className="font-bold text-orange-800">{r.name}</span>
-                            <span className="text-[9px] text-gray-400">
-                              {new Date(r.createdAt).toLocaleDateString()}
-                            </span>
+                  <div>
+                    {/* Header */}
+                    <div className="flex items-center gap-4">
+                      {showPhoto ? (
+                        hasAvatar ? (
+                          <img
+                            src={avatarUrl}
+                            alt={item.name}
+                            className="h-12 w-12 rounded-full object-cover border border-gray-100 shrink-0"
+                            referrerPolicy="no-referrer"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="h-12 w-12 rounded-full bg-[#FFF4EB] border border-[#ff9248] flex items-center justify-center font-bold text-base text-[#ff9248] shrink-0">
+                            {item.name ? item.name.charAt(0).toUpperCase() : "?"}
                           </div>
-                          <p className="text-gray-600">{r.text}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                        )
+                      ) : null}
 
-                  {/* Add reply trigger */}
-                  <div className="pt-1 flex gap-2">
-                    <button
-                      onClick={() => setReplyToId(replyToId === c._id ? null : c._id)}
-                      className="text-[10px] font-bold text-orange-400 hover:text-[#ff9248]"
-                    >
-                      Reply
-                    </button>
-                    {replyToId === c._id && (
-                      <div className="flex gap-1.5 flex-grow items-center">
-                        <input
-                          type="text"
-                          value={replyText}
-                          onChange={(e) => setReplyText(e.target.value)}
-                          placeholder="Your reply..."
-                          className="flex-grow px-2 py-1 rounded bg-white border border-gray-200 text-[10px] focus:outline-none"
-                        />
-                        <button
-                          onClick={() => handleAddReply(c._id)}
-                          className="px-2 py-1 bg-[#ff9248] text-white text-[9px] rounded font-bold"
-                        >
-                          Send
-                        </button>
+                      <div className="min-w-0">
+                        <h3 className="font-extrabold text-sm sm:text-base text-[#013e37] leading-tight truncate">
+                          {item.name}
+                        </h3>
+                        {showDate && (
+                          <p className="text-[10px] sm:text-xs text-gray-400 font-semibold mt-1">
+                            {item.city || "Google Reviewer"}
+                          </p>
+                        )}
                       </div>
+
+                      {showRating && (
+                        <div className="ml-auto flex text-yellow-400 shrink-0">
+                          {Array.from({ length: item.rating || 5 }).map((_, i) => (
+                            <Star key={i} size={12} className="fill-yellow-400 text-yellow-400" />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Text */}
+                    <p className="mt-5 text-xs sm:text-sm text-slate-600 leading-relaxed italic font-medium font-sans">
+                      "{item.review || "Excellent service and high quality products!"}"
+                    </p>
+                  </div>
+
+                  <div className="mt-5 pt-3 border-t border-gray-50 text-[10px] sm:text-xs text-gray-400 flex justify-between items-center">
+                    <span className="flex items-center gap-1 font-semibold text-gray-500">
+                      <svg className="w-3 h-3 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-6.887 4.114-4.693 0-8.5-3.807-8.5-8.5s3.807-8.5 8.5-8.5c2.14 0 4.09.78 5.61 2.05L19.98 1.5C17.86-.33 15.12-1.35 12.24-1.35c-6.83 0-12.39 5.56-12.39 12.39S5.41 23.43 12.24 23.43c7.14 0 11.85-5.02 11.85-12.08 0-.81-.07-1.42-.23-2.07H12.24z"/>
+                      </svg>
+                      Google Review
+                    </span>
+                    {showDate && item.createdAt && (
+                      <span>{new Date(item.createdAt).toLocaleDateString()}</span>
                     )}
                   </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Comment Form */}
-            <form onSubmit={handleAddComment} className="flex flex-col gap-2 pt-2 border-t border-gray-50">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={commentName}
-                  onChange={(e) => setCommentName(e.target.value)}
-                  placeholder="Your Name *"
-                  required
-                  className="w-1/3 px-3 py-1.5 rounded-xl border border-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-[#ff9248]"
-                />
-                <input
-                  type="text"
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Add a public comment... *"
-                  required
-                  className="flex-grow px-3 py-1.5 rounded-xl border border-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-[#ff9248]"
-                />
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 bg-[#013e37] text-white rounded-xl text-xs font-bold cursor-pointer hover:bg-opacity-95"
-                >
-                  Comment
-                </button>
-              </div>
-            </form>
+                </motion.div>
+              );
+            })}
           </div>
         )}
       </div>

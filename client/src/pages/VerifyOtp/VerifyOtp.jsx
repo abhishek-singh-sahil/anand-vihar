@@ -30,7 +30,9 @@ function VerifyOtp() {
       const res = await verifyOtp(email, otp);
       if (res.success) {
         toast.success("Email verified successfully! Welcome.");
-        navigate("/");
+        const redirectUrl = localStorage.getItem("redirectAfterLogin") || "/";
+        localStorage.removeItem("redirectAfterLogin");
+        navigate(redirectUrl);
       }
     } catch (error) {
       toast.error(error.message || "Invalid OTP code");

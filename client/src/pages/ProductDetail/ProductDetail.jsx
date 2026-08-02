@@ -77,11 +77,6 @@ function ProductDetail() {
   if (!product) return null;
 
   const handleAddToCart = async () => {
-    if (!isAuthenticated) {
-      toast.error("Please login to add items to your cart!");
-      navigate("/login");
-      return;
-    }
     if (!selectedVariant) {
       toast.error("Please select a variant option!");
       return;
@@ -264,7 +259,7 @@ function ProductDetail() {
 
             <button
               onClick={handleAddToCart}
-              className="flex-1 bg-[#ff6b1a] hover:bg-[#ea5a00] text-white py-3.5 rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 border-none cursor-pointer text-base"
+              className="flex-1 bg-[#ff6b1a] hover:bg-[#ea5a00] text-white py-3.5 rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 border-none cursor-pointer text-lg"
             >
               <FaShoppingCart size={16} />
               <span>Add to Cart</span>

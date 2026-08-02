@@ -2,17 +2,30 @@ import React, { useState } from "react";
 import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../hooks/useAuth";
 import api from "../../services/api";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { FaTrash, FaPlus, FaMinus, FaShoppingBag, FaArrowRight, FaTicketAlt } from "react-icons/fa";
 
 function Cart() {
   const { cart, loading, updateQuantity, updateCartItemVariant, removeFromCart, getCartCount } = useCart();
-  const { settings } = useAuth();
+  const { isAuthenticated, settings } = useAuth();
+  const navigate = useNavigate();
   
   const [couponCode, setCouponCode] = useState("");
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponLoading, setCouponLoading] = useState(false);
+
+  const handleProceedToCheckout = (e) => {
+    e.preventDefault();
+    if (!isAuthenticated) {
+      localStorage.setItem("redirectAfterLogin", "/checkout");
+      toast.error("Please login to proceed to checkout!");
+      navigate("/login");
+    } else {
+      navigate("/checkout");
+    }
+  };
 
   const calculateSubtotal = () => {
     return cart.reduce((total, item) => {
@@ -254,13 +267,13 @@ function Cart() {
                 <span className="text-[#ff6b1a]">₹{grandTotal}</span>
               </div>
 
-              <a 
-                href="/checkout" 
-                className="w-full mt-4 bg-[#ff6b1a] hover:bg-[#ea5a00] text-white py-3.5 rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer no-underline text-center text-sm"
+              <button 
+                onClick={handleProceedToCheckout} 
+                className="w-full mt-4 bg-[#ff6b1a] hover:bg-[#ea5a00] text-white py-3.5 rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer border-none text-center text-sm"
               >
                 <span>Proceed to Checkout</span>
                 <FaArrowRight size={12} />
-              </a>
+              </button>
             </div>
 
           </div>

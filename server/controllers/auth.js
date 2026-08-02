@@ -419,3 +419,82 @@ export const updateProfile = async (req, res, next) => {
     next(error);
   }
 };
+
+const decodeGoogleCredential = (credential) => {
+  try {
+    const parts = credential.split(".");
+    if (parts.length !== 3) return null;
+    
+    // Replace base64url characters to standard base64
+    let base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    // Pad base64 if needed
+    while (base64.length % 4) {
+      base64 += "=";
+    }
+    
+    const payload = Buffer.from(base64, "base64").toString("utf-8");
+    return JSON.parse(payload);
+  } catch (err) {
+    console.error("Error decoding Google credential:", err);
+    return null;
+  }
+};
+
+export const googleLogin = async (req, res, next) => {
+  try {
+    const { credential, profile } = req.body;
+    let email, name, picture;
+
+    if (credential) {
+      const payload = decodeGoogleCredential(credential);
+      if (!payload || !payload.email) {
+        return res.status(400).json({ success: false, message: "Invalid Google credential token" });
+      }
+      email = payload.email;
+      name = payload.name;
+      picture = payload.picture;
+    } else if (profile) {
+      email = profile.email;
+      name = profile.name;
+      picture = profile.picture;
+    } else {
+      return res.status(400).json({ success: false, message: "Credential token or profile is required" });
+    }
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required" });
+    }
+
+    // Find or create user
+    let user = await prisma.user.findUnique({ where: { email } });
+
+    if (user) {
+      if (!user.isVerified) {
+        user = await prisma.user.update({
+          where: { email },
+          data: { isVerified: true }
+        });
+      }
+    } else {
+      const salt = await bcrypt.genSalt(10);
+      const randomPassword = Math.random().toString(36).substring(2, 15);
+      const passwordHash = await bcrypt.hash(randomPassword, salt);
+
+      user = await prisma.user.create({
+        data: {
+          name: name || email.split("@")[0],
+          email,
+          password: passwordHash,
+          phone: "",
+          profilePic: picture || "",
+          isVerified: true
+        }
+      });
+      await sendWelcomeEmail(user.email, user.name);
+    }
+
+    return sendTokenResponse(user, 200, res);
+  } catch (error) {
+    next(error);
+  }
+};
