@@ -49,7 +49,7 @@ function KalakandHistory() {
   const [activeStep, setActiveStep] = useState(0);
 
   return (
-    <section className="py-20 bg-[#FAF5EF] relative overflow-hidden font-sans">
+    <section className="py-8 md:py-12 bg-[#FAF5EF] relative overflow-hidden font-sans">
       {/* Decorative Orbs */}
       <div className="absolute -top-40 -right-40 h-[400px] w-[400px] rounded-full bg-[#ff9248]/5 blur-[120px]" />
       <div className="absolute -bottom-40 -left-40 h-[400px] w-[400px] rounded-full bg-[#013e37]/5 blur-[120px]" />

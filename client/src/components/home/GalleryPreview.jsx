@@ -32,7 +32,7 @@ function GalleryPreview() {
   }
 
   return (
-    <section className="py-16 md:py-24 bg-[#FAF5EF] relative overflow-hidden font-sans">
+    <section className="py-8 md:py-12 bg-[#FAF5EF] relative overflow-hidden font-sans">
       {/* Background Orbs */}
       <div className="absolute -top-40 left-0 h-[350px] w-[350px] rounded-full bg-[#ff9248]/5 blur-[100px]" />
       <div className="absolute bottom-0 right-0 h-[350px] w-[350px] rounded-full bg-[#013e37]/5 blur-[100px]" />

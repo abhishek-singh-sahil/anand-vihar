@@ -47,15 +47,15 @@ function Testimonials() {
           if (res.data.testimonials && res.data.testimonials.length > 0) {
             setItems(res.data.testimonials);
           } else {
-            setItems(fallbackTestimonials);
+            setItems([]);
           }
           setSettings(res.data.settings || null);
         } else {
-          setItems(fallbackTestimonials);
+          setItems([]);
         }
       } catch (err) {
         console.error("Failed to fetch testimonials", err);
-        setItems(fallbackTestimonials);
+        setItems([]);
       } finally {
         setLoading(false);
       }
@@ -63,7 +63,7 @@ function Testimonials() {
     fetchTestimonials();
   }, []);
 
-  if (!loading && settings && !settings.enabled) {
+  if (!loading && (!settings || !settings.enabled || items.length === 0)) {
     return null;
   }
 
@@ -72,7 +72,7 @@ function Testimonials() {
   const showRating = settings ? settings.showRating : true;
 
   return (
-    <section className="py-16 md:py-24 bg-[#FAF5EF] relative overflow-hidden font-sans border-t border-gray-100">
+    <section className="py-8 md:py-12 bg-[#FAF5EF] relative overflow-hidden font-sans border-t border-gray-100">
       {/* Background Orbs */}
       <div className="absolute -top-40 right-0 h-[350px] w-[350px] rounded-full bg-[#013e37]/5 blur-[100px]" />
       <div className="absolute bottom-0 left-0 h-[350px] w-[350px] rounded-full bg-[#ff9248]/5 blur-[100px]" />
