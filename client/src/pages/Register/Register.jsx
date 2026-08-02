@@ -36,7 +36,7 @@ function Register() {
     /* global google */
     if (window.google) {
       google.accounts.id.initialize({
-        client_id: "542385150912-q28n20b411o6cclbe514u3u4a18t1j4k.apps.googleusercontent.com",
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "411923802339-26ljjj421p00dt6cai2av7d2eg9t424i.apps.googleusercontent.com",
         callback: (res) => handleGoogleSuccess(res.credential)
       });
       google.accounts.id.renderButton(
